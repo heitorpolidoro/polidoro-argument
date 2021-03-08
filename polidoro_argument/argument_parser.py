@@ -158,6 +158,7 @@ class ArgumentParser(argparse.ArgumentParser):
         if self.subparsers is None:
             metavar = kwargs.pop('metavar', 'command')
             required = kwargs.pop('required', False)
+
             self.subparsers = super(ArgumentParser, self).add_subparsers(
                 metavar=metavar,
                 required=required,
@@ -188,11 +189,11 @@ class ArgumentParser(argparse.ArgumentParser):
                 final_parser = ArgumentParser.parsers[parser_name_id]
             else:
                 subparsers = final_parser.add_subparsers()
-                final_parser = subparsers.add_parser(
-                    parser_name[-1],
-                    parser_id=parser_name_id,
-                    help=getattr(trgt, 'help', '')
-                )
+                kwargs = {"parser_id": parser_name_id}
+                help = getattr(trgt, 'help', None)
+                if help:
+                    kwargs["help"] = help
+                final_parser = subparsers.add_parser(parser_name[-1], **kwargs)
                 default_cmd = getattr(trgt, 'default', None)
                 if default_cmd:
                     final_parser.set_defaults(method=getattr(trgt, default_cmd))
