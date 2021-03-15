@@ -59,55 +59,59 @@ class ArgumentParser(argparse.ArgumentParser):
 
     parsers = {}
 
-    def __new__(cls, *_args, parser_id=None, **_kwargs):
-        # to create only one ArgumentParses with the same ID
-        if parser_id not in ArgumentParser.parsers:
-            return object.__new__(cls)
-        return ArgumentParser.parsers[parser_id]
+    # def __new__(cls, *_args, parser_id=None, **_kwargs):
+    #     # to create only one ArgumentParses with the same ID
+    #     if parser_id not in ArgumentParser.parsers:
+    #         return object.__new__(cls)
+    #     return ArgumentParser.parsers[parser_id]
 
     def __init__(self, *args, version=None, parser_id=None, **kwargs):
-        # Only initialize if is a new parser
-        if parser_id not in ArgumentParser.parsers:
-            kwargs.setdefault('argument_default', argparse.SUPPRESS)
-            self.subparsers = None
+        print(1)
+        kwargs.setdefault('argument_default', argparse.SUPPRESS)
+        self.subparsers = None
 
-            super(ArgumentParser, self).__init__(*args, **kwargs)
-            if version:
-                self.add_argument(
-                    '-v',
-                    '--version',
-                    action='version',
-                    version='%(prog)s ' + version
-                )
+        super(ArgumentParser, self).__init__(*args, **kwargs)
+        if version:
+            self.add_argument(
+                '-v',
+                '--version',
+                action='version',
+                version='%(prog)s ' + version
+            )
 
-            self.parsers[parser_id] = self
-            self.set_defaults(method=self.print_usage)
+        self.parsers[parser_id] = self
+        self.set_defaults(method=self.print_usage)
+        if parser_id is None:
+            self.add_arguments()
+
 
     def parse_args(self, args=None, namespace=None):
-        # Add arguments for each @Argument
-        self.add_arguments()
-
-        # Add subparser for each @Command
-        self.add_commands()
-
+        # # Add arguments for each @Argument
+        # self.add_arguments()
+        #
+        # # Add subparser for each @Command
+        # self.add_commands()
+        #
         namespace, unknown_args = super(ArgumentParser, self).parse_known_args(args, namespace)
         namespace_dict = vars(namespace)
         method = namespace_dict.pop('method', None)
-        if method is not None and (method != self.print_usage or unknown_args == []):
-            namespace_args = namespace_dict.pop('arguments', [])
-            for uk_arg in unknown_args:
-                search = re.search('--(?P<key>.*?)=(?P<value>.*)', uk_arg)
-                if search:
-                    groupdict = search.groupdict()
-                    namespace_dict[groupdict['key']] = groupdict['value']
-
-                else:
-                    namespace_args.append(uk_arg)
-
-            method_return = method(*namespace_args, **namespace_dict)
-            if method_return is None:
-                method_return = 0
-            sys.exit(method_return)
+        if method is not None:
+            sys.exit(method())
+        # if method is not None and (method != self.print_usage or unknown_args == []):
+        #     namespace_args = namespace_dict.pop('arguments', [])
+        #     for uk_arg in unknown_args:
+        #         search = re.search('--(?P<key>.*?)=(?P<value>.*)', uk_arg)
+        #         if search:
+        #             groupdict = search.groupdict()
+        #             namespace_dict[groupdict['key']] = groupdict['value']
+        #
+        #         else:
+        #             namespace_args.append(uk_arg)
+        #
+        #     method_return = method(*namespace_args, **namespace_dict)
+        #     if method_return is None:
+        #         method_return = 0
+        #     sys.exit(method_return)
 
         return super(ArgumentParser, self).parse_args(args, namespace)
 

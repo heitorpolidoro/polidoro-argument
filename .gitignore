@@ -4,6 +4,6 @@
 /dist/
 *.egg-info/
 __pycache__
-/test/log.log
-/test/argument
+/tests/log.log
+/tests/argument
 /venv/

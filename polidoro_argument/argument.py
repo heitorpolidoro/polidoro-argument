@@ -21,13 +21,13 @@ class Argument:  # pylint: disable=too-few-public-methods
         else:
             self.args = tuple(['--' + method.__name__])
 
-            self.kwargs.update({
-                'action': CustomAction,
-                'method': method,
-            })
             parameters = [p for p in inspect.signature(method).parameters if not p.startswith('_')]
             # nargs = number of arguments in method
-            self.kwargs['nargs'] = len(parameters)
+            self.kwargs = {
+                'action': CustomAction,
+                'method': method,
+                'nargs': len(parameters)
+            }
             if parameters:
                 self.kwargs['metavar'] = ' '.join(parameters)
 
