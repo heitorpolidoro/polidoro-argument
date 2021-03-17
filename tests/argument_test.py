@@ -4,36 +4,17 @@ Test file
 import re
 
 import pytest
-from polidoro_argument import VERSION
 
-from polidoro_argument.argument import Argument
-from polidoro_argument.argument_parser import ArgumentParser
-from polidoro_argument.command import Command
-
-
-# @Argument
-# def simple_with_2_args(arg1, arg2):
-#     """ Command line argument with two arguments """
-#     print('those are your args: %s %s' % (arg1, arg2))
-#
-#
-# class ClassArgument:
-#     """ Command line command class """
-#
-#     @staticmethod
-#     @Argument
-#     def argument_in_class():
-#         """ Class command line argument """
-#         print('argument_in_class')
+from pyargument.argument import Argument
+from pyargument.argument_parser import ArgumentParser
 
 
 @pytest.fixture(autouse=True)
 def clean_scenario():
-    Argument.arguments = []
+    ArgumentParser._parser = None
 
 
-def test_simple(capsys):
-    assert VERSION == '3.0.0'
+def test_simple_usage(capsys):
     @Argument
     def simple():
         """ Simple command line argument """
@@ -42,28 +23,82 @@ def test_simple(capsys):
     parser = ArgumentParser()
     with pytest.raises(SystemExit) as exit_info:
         parser.parse_args()
-    assert exit_info.value.code is None
+    assert exit_info.value.code is 0
+
     out_err = capsys.readouterr()
-    assert '--simple' in out_err.out
-
-    with pytest.raises(SystemExit) as exit_info:
-        parser.parse_args('--simple')
-
-    print(out_err)
-    out_err = capsys.readouterr()
-    assert '--simple' in out_err.out
+    assert '[--simple]' in out_err.out
 
 
-def test_simple_with_arg(capsys):
+def test_simple_call(capsys):
     @Argument
-    def simple_with_arg(arg):
-        """ Command line argument with one argument and help """
-        print('this is your arg %s' % arg)
+    def simple():
+        """ Simple command line argument """
+        print('simple called')
+
+    parser = ArgumentParser()
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args(['--simple'])
+    assert exit_info.value.code is 0
+
+    out_err = capsys.readouterr()
+    assert 'simple called' in out_err.out
+
+
+def test_simple_help(capsys):
+    @Argument
+    def simple():
+        """ Simple command line argument """
+        print('simple called')
+
+    parser = ArgumentParser()
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args(['--help'])
+    assert exit_info.value.code is 0
+
+    out_err = capsys.readouterr()
+    assert '--simple\n' in out_err.out
+
+
+def test_simple_usage_with_args_in_argument_decorator(capsys):
+    @Argument(help="simple help")
+    def simple():
+        """ Simple command line argument """
+        print('simple')
 
     parser = ArgumentParser()
     with pytest.raises(SystemExit) as exit_info:
         parser.parse_args()
-    assert exit_info.value.code is None
+    assert exit_info.value.code is 0
+
     out_err = capsys.readouterr()
-    print(out_err)
-    assert '--simple_with_arg' in out_err.out
+    assert '[--simple]' in out_err.out
+
+
+def test_simple_call_with_args_in_argument_decorator(capsys):
+    @Argument(help="simple help")
+    def simple():
+        """ Simple command line argument """
+        print('simple called')
+
+    parser = ArgumentParser()
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args(['--simple'])
+    assert exit_info.value.code is 0
+
+    out_err = capsys.readouterr()
+    assert 'simple called' in out_err.out
+
+
+def test_simple_help_with_args_in_argument_decorator(capsys):
+    @Argument(help="simple help")
+    def simple():
+        """ Simple command line argument """
+        print('simple called')
+
+    parser = ArgumentParser()
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args(['--help'])
+    assert exit_info.value.code is 0
+
+    out_err = capsys.readouterr()
+    assert re.match('.*--simple +simple help', out_err.out, flags=re.DOTALL)

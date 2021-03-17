@@ -6,5 +6,5 @@ from polidoro_argument.argument import Argument
 from polidoro_argument.argument_parser import ArgumentParser
 from polidoro_argument.command import Command
 
-NAME = 'polidoro_argument'
+NAME = 'py_argument'
 VERSION = '3.0.0'
