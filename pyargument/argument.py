@@ -36,6 +36,6 @@ class Argument(object):
         if parameters:
             kwargs['metavar'] = ' '.join(parameters)
 
-        parser._add_argument('--' + method.__name__, **kwargs)
+        parser.add_argument('--' + method.__name__, **kwargs)
 
         return method

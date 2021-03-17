@@ -5,8 +5,7 @@ import re
 
 import pytest
 
-from pyargument.argument import Argument
-from pyargument.argument_parser import ArgumentParser
+from pyargument import Argument, ArgumentParser
 
 
 @pytest.fixture(autouse=True)
