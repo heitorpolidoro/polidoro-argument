@@ -16,7 +16,7 @@ def simple_with_one_arg(arg1):
 
 @Argument
 def simple_with_args(arg1, arg2, optional=None):
-    print('simple_with_args called, args: %s, %s' % (arg1, arg2) + (' %s' % optional if optional else ''))
+    print('simple_with_args called, args: %s, %s' % (arg1, arg2) + (', %s' % optional if optional else ''))
 
 
 parser = ArgumentParser()
@@ -76,3 +76,12 @@ def test_call_without_passing_optional_args(capsys):
 
     out_err = capsys.readouterr()
     assert 'simple_with_args called, args: TEST_ARG1, TEST_ARG2\n' == out_err.out
+
+
+def test_call_passing_optional_args(capsys):
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args('--simple_with_args TEST_ARG1 TEST_ARG2 TEST_OPT'.split())
+    assert exit_info.value.code is 0
+
+    out_err = capsys.readouterr()
+    assert 'simple_with_args called, args: TEST_ARG1, TEST_ARG2, TEST_OPT\n' == out_err.out
