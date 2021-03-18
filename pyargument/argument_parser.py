@@ -1,12 +1,7 @@
 import argparse
 import sys
 
-
-class ArgumentHelpFormatter(argparse.HelpFormatter):
-    def _format_args(self, action, default_metavar):
-        if action.nargs == '*':
-            return 'batata'
-        return super(ArgumentHelpFormatter, self)._format_args(action, default_metavar)
+from pyargument.argument_help_formatter import ArgumentHelpFormatter
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -37,10 +32,10 @@ class ArgumentParser(argparse.ArgumentParser):
             self.exit()
         else:
             namespace = super(ArgumentParser, self).parse_args(args, namespace)
-            for name, value in vars(namespace).items():
-                if callable(value):
-
-                    resp = value(*getattr(namespace, name + '_args', []), **getattr(namespace, name + '_kwargs', {}))
-                    if resp is not None:
-                        print(resp)
-                    sys.exit(0)
+            arguments = {name: value for name, value in vars(namespace).items() if isinstance(value, tuple)}
+            for name, value in sorted(arguments.items(), key=lambda item: item[1]):
+                _, method, m_args = value
+                resp = method(*m_args)
+                if resp is not None:
+                    print(resp)
+                sys.exit(0)

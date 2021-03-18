@@ -3,10 +3,24 @@ import sys
 
 
 class ArgumentAction(argparse.Action):
-    def __init__(self, *args, method=None, nargs_min=None, nargs_max=None, **kwargs):
+    def __init__(self,
+                 *args,
+                 method=None,
+                 nargs_min=None,
+                 nargs_max=None,
+                 required_parameters=None,
+                 optional_parameters=None,
+                 **kwargs):
+        if optional_parameters is None:
+            optional_parameters = []
+        if required_parameters is None:
+            required_parameters = []
+
         self.method = method
         self.nargs_min = nargs_min
         self.nargs_max = nargs_max
+        self.required_parameters = required_parameters
+        self.optional_parameters = optional_parameters
         super(ArgumentAction, self).__init__(*args, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
@@ -16,9 +30,6 @@ class ArgumentAction(argparse.Action):
             error_message = 'error: argument --simple_with_args: expected %s arguments' % ('-'.join(nargs))
             sys.stderr.write(error_message)
             sys.exit(2)
-        setattr(namespace, self.dest, self.method)
-        setattr(namespace, self.dest + '_args', values)
-        # resp = self.method(*values)
-        # if resp is not None:
-        #     print(resp)
-        # sys.exit(0)
+        index = getattr(namespace, '__polidoro_index', 0)
+        setattr(namespace, self.dest, (index, self.method, values))
+        setattr(namespace, '__polidoro_index', index + 1)

@@ -3,7 +3,8 @@ Decorator to add an function/method as argument in parser
 """
 import inspect
 
-from pyargument import ArgumentAction, ArgumentParser
+from pyargument.argument_action import ArgumentAction
+from pyargument.argument_parser import ArgumentParser
 
 
 class Argument(object):
@@ -30,6 +31,7 @@ class Argument(object):
         required_parameters = []
         optional_parameters = []
         for name, info in parameters.items():
+            # noinspection PyUnresolvedReferences,PyProtectedMember
             if info.default == inspect._empty:
                 required_parameters.append(name)
             else:
@@ -49,7 +51,9 @@ class Argument(object):
             'nargs_min': nargs_min,
             'nargs_max': nargs_max,
             'nargs': nargs,
-            'metavar': metavar
+            'metavar': metavar,
+            'required_parameters': required_parameters,
+            'optional_parameters': optional_parameters,
         })
 
         parser.add_argument('--' + method.__name__, **kwargs)
