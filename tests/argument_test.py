@@ -11,7 +11,7 @@ ArgumentParser._parser = None
 
 @Argument
 def simple():
-    print('simple called')
+    return 'simple called'
 
 
 parser = ArgumentParser()

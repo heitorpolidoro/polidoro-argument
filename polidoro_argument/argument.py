@@ -22,9 +22,9 @@ class Argument(object):
 
     @staticmethod
     def _add_argument(method, **kwargs):
+        """ Add the method as argument in parser, to be callas as --METHOD_NAME """
         if not hasattr(method, '__name__'):
             raise RuntimeError('The "method" must have the attribute "__name__"!')
-        """ Add the method as argument in parser, to be callas as --METHOD_NAME """
         parser = ArgumentParser.get_parser()
 
         parameters = {name: info for name, info in inspect.signature(method).parameters.items() if
