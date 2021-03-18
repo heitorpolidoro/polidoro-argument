@@ -1,9 +1,9 @@
 """
 Test file
 """
-from polidoro_argument.argument import Argument
-from polidoro_argument.argument_parser import ArgumentParser
-from polidoro_argument.command import Command
+from polidoro_argument_old.argument import Argument
+from polidoro_argument_old.argument_parser import ArgumentParser
+from polidoro_argument_old.command import Command
 
 
 @Argument

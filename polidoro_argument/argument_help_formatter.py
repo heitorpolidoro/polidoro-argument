@@ -1,6 +1,6 @@
 import argparse
 
-from pyargument.argument_action import ArgumentAction
+from polidoro_argument.argument_action import ArgumentAction
 
 
 class ArgumentHelpFormatter(argparse.HelpFormatter):

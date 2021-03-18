@@ -5,7 +5,7 @@ import re
 
 import pytest
 
-from pyargument import Argument, ArgumentParser
+from polidoro_argument import Argument, ArgumentParser
 
 ArgumentParser._parser = None
 
