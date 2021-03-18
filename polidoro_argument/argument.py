@@ -27,8 +27,8 @@ class Argument(object):
             raise RuntimeError('The "method" must have the attribute "__name__"!')
         parser = ArgumentParser.get_parser()
 
-        parameters = {name: info for name, info in inspect.signature(method).parameters.items() if
-                      not name.startswith('_')}
+        parameters = {name: info for name, info in inspect.signature(method).parameters.items()
+                      if not name.startswith('_')}
         required_parameters = []
         optional_parameters = []
         for name, info in parameters.items():

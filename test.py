@@ -54,6 +54,7 @@ class ClassCommand:
 parser = ArgumentParser()
 parser.parse_args()
 
+
 def test_test():
     assert 1 == 1
     assert 1 == 2
