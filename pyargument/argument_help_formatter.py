@@ -1,6 +1,6 @@
 import argparse
 
-from pyargument import ArgumentAction
+from pyargument.argument_action import ArgumentAction
 
 
 class ArgumentHelpFormatter(argparse.HelpFormatter):
