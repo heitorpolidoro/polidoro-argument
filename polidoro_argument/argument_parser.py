@@ -32,10 +32,4 @@ class ArgumentParser(argparse.ArgumentParser):
             self.exit()
         else:
             namespace = super(ArgumentParser, self).parse_args(args, namespace)
-            arguments = {name: value for name, value in vars(namespace).items() if isinstance(value, tuple)}
-            for name, value in sorted(arguments.items(), key=lambda item: item[1]):
-                _, method, m_args = value
-                resp = method(*m_args)
-                if resp is not None:
-                    print(resp)
-                sys.exit(0)
+            return namespace

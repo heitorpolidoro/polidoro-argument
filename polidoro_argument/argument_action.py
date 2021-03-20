@@ -26,6 +26,7 @@ class ArgumentAction(argparse.Action):
             error_message = 'error: argument --simple_with_args: expected %s arguments' % ('-'.join(nargs))
             sys.stderr.write(error_message)
             sys.exit(2)
-        index = getattr(namespace, '__polidoro_index', 0)
-        setattr(namespace, self.dest, (index, self.method, values))
-        setattr(namespace, '__polidoro_index', index + 1)
+        resp = self.method(*values)
+        if resp is not None:
+            print(resp)
+        sys.exit(0)
