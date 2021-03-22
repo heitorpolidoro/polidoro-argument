@@ -1,4 +1,5 @@
 import argparse
+import inspect
 import sys
 
 from polidoro_argument.argument_help_formatter import ArgumentHelpFormatter
@@ -34,10 +35,29 @@ class ArgumentParser(argparse.ArgumentParser):
             namespace = argparse.Namespace()
             setattr(namespace, 'methods_to_run', {})
             namespace = super(ArgumentParser, self).parse_args(args, namespace)
-            for argument_method in sorted(namespace.methods_to_run.values(), key=lambda arg_method: arg_method.order):
-                resp = argument_method()
-                if resp is not None:
-                    print(resp)
-            sys.exit(0)
+            if namespace.methods_to_run.values():
+                for argument_method in sorted(namespace.methods_to_run.values(), key=lambda arg_method: arg_method.order):
+                    resp = argument_method()
+                    if resp is not None:
+                        print(resp)
+                sys.exit(0)
 
             return namespace
+
+    @staticmethod
+    def get_params_info(method):
+        parameters = {name: info for name, info in inspect.signature(method).parameters.items()
+                      if not name.startswith('_')}
+        required_params = []
+        optional_params = []
+        for name, info in parameters.items():
+            # noinspection PyUnresolvedReferences,PyProtectedMember
+            if info.default == inspect._empty:
+                required_params.append(name)
+            else:
+                optional_params.append(name)
+        # nargs = number of arguments in method
+        nargs_min = len(required_params)
+        nargs_max = len(required_params + optional_params)
+        return nargs_max, nargs_min, optional_params, required_params
+

@@ -7,6 +7,6 @@ class ArgumentHelpFormatter(argparse.HelpFormatter):
     def _format_args(self, action, default_metavar):
         if isinstance(action, ArgumentAction) and action.nargs == '*':
             return ' '.join(
-                action.required_parameters + ['[%s]' % opt_param for opt_param in action.optional_parameters])
+                action.required_params + ['[%s]' % opt_param for opt_param in action.optional_params])
         # noinspection PyProtectedMember
         return super(ArgumentHelpFormatter, self)._format_args(action, default_metavar)

@@ -34,7 +34,7 @@ def test_help(capsys):
 
     out_err = capsys.readouterr()
     assert re.match(
-        '.*--simple_with_args_in_argument[ \\n]+simple_with_args_in_argument help',
+        r'.*--simple_with_args_in_argument[ \n]+simple_with_args_in_argument help',
         out_err.out,
         flags=re.DOTALL)
 

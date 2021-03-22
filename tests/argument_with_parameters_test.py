@@ -1,6 +1,7 @@
 """
 Test file
 """
+import re
 
 import pytest
 
@@ -15,10 +16,11 @@ def simple_with_one_arg(arg1):
 
 
 @Argument
-def simple_with_args(arg1, arg2, optional=None):
+def simple_with_args(arg1, arg2, optional1=None, optional2=None):
     print(
         'simple_with_args called, args: %s, %s' % (arg1, arg2) +
-        (', %s' % optional if optional else ''))
+        (', %s' % optional1 if optional1 else '') +
+        (', %s' % optional2 if optional2 else ''))
 
 
 parser = ArgumentParser()
@@ -31,7 +33,9 @@ def test_usage(capsys):
 
     out_err = capsys.readouterr()
     assert '[--simple_with_one_arg arg1]' in out_err.out
-    assert '[--simple_with_args arg1 arg2 [optional]]' in out_err.out
+    assert re.match(r'.*\[--simple_with_args.*arg1.*arg2.*\[optional1].*\[optional2]]\n',
+                    out_err.out,
+                    re.DOTALL)
 
 
 def test_help(capsys):
@@ -41,7 +45,7 @@ def test_help(capsys):
 
     out_err = capsys.readouterr()
     assert '--simple_with_one_arg arg1\n' in out_err.out
-    assert '--simple_with_args arg1 arg2 [optional]\n' in out_err.out
+    assert '--simple_with_args arg1 arg2 [optional1] [optional2]\n' in out_err.out
 
 
 def test_call_without_passing_arg(capsys):
@@ -59,7 +63,7 @@ def test_call_without_passing_all_args(capsys):
     assert exit_info.value.code == 2
 
     out_err = capsys.readouterr()
-    assert 'error: argument --simple_with_args: expected 2-3 arguments' in out_err.err
+    assert 'error: argument --simple_with_args: expected 2-4 arguments' in out_err.err
 
 
 def test_call_passing_all_args(capsys):

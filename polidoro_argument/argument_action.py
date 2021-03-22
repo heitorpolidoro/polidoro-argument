@@ -10,15 +10,15 @@ class ArgumentAction(argparse.Action):
                  method,
                  nargs_min,
                  nargs_max,
-                 required_parameters,
-                 optional_parameters,
+                 required_params,
+                 optional_params,
                  **kwargs):
 
         self.method = method
         self.nargs_min = nargs_min
         self.nargs_max = nargs_max
-        self.required_parameters = required_parameters
-        self.optional_parameters = optional_parameters
+        self.required_params = required_params
+        self.optional_params = optional_params
         super(ArgumentAction, self).__init__(**kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
