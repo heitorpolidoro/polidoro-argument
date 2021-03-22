@@ -14,6 +14,11 @@ def simple():
     return 'simple called'
 
 
+@Argument
+def simple2():
+    return 'simple2 called'
+
+
 parser = ArgumentParser()
 
 
@@ -42,3 +47,21 @@ def test_call(capsys):
 
     out_err = capsys.readouterr()
     assert 'simple called\n' == out_err.out
+
+
+def test_call_order(capsys):
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args(['--simple', '--simple2'])
+    assert exit_info.value.code == 0
+
+    out_err = capsys.readouterr()
+    assert 'simple called\nsimple2 called\n' == out_err.out
+
+
+def test_call_order(capsys):
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args(['--simple2', '--simple'])
+    assert exit_info.value.code == 0
+
+    out_err = capsys.readouterr()
+    assert 'simple2 called\nsimple called\n' == out_err.out

@@ -1,6 +1,8 @@
 import argparse
 import sys
 
+from polidoro_argument.argument_method import ArgumentMethod
+
 
 class ArgumentAction(argparse.Action):
     def __init__(self,
@@ -23,10 +25,8 @@ class ArgumentAction(argparse.Action):
         if self.nargs_min is not None and len(values) < self.nargs_min or \
                 self.nargs_max is not None and len(values) > self.nargs_max:
             nargs = [str(value) for value in [self.nargs_min, self.nargs_max] if value is not None]
-            error_message = 'error: argument --simple_with_args: expected %s arguments' % ('-'.join(nargs))
+            error_message = 'error: argument --%s: expected %s arguments\n' % (self.method.__name__, '-'.join(nargs))
             sys.stderr.write(error_message)
             sys.exit(2)
-        resp = self.method(*values)
-        if resp is not None:
-            print(resp)
-        sys.exit(0)
+
+        namespace.methods_to_run[self.dest] = ArgumentMethod(self.method, values)
