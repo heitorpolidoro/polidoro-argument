@@ -41,5 +41,6 @@ jobs:
         env:
           PYTHONPATH: .
         run: |
-          python tests/generate_test_files.py
+          cd tests
+          python generate_test_files.py
           pytest
