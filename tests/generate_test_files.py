@@ -54,7 +54,7 @@ for test_case in generate_tests(decorator):
     import_str = 'from polidoro_argument.%s import %s' % (decorator.lower(), decorator)
     file_name = test_case.method_name.replace('method_with_', '') + '_test.py'
     if not os.getcwd().endswith('/tests'):
-        file_name += '/tests/'
+        file_name = '/tests/' + file_name
 
     with open(file_name, 'w') as arq:
         arq.write(Template(template).substitute(
