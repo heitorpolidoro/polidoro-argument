@@ -3,6 +3,7 @@ An argparse.ArgumentParser wrapper to create the arguments and run the methods
 """
 import argparse
 import inspect
+import re
 import sys
 
 from polidoro_argument_old.argument import Argument
@@ -84,32 +85,32 @@ class ArgumentParser(argparse.ArgumentParser):
             self.add_arguments()
 
     def parse_args(self, args=None, namespace=None):
-        # # Add arguments for each @Argument
-        # self.add_arguments()
-        #
-        # # Add subparser for each @Command
-        # self.add_commands()
-        #
+        # Add arguments for each @Argument
+        self.add_arguments()
+
+        # Add subparser for each @Command
+        self.add_commands()
+
         namespace, unknown_args = super(ArgumentParser, self).parse_known_args(args, namespace)
         namespace_dict = vars(namespace)
         method = namespace_dict.pop('method', None)
         if method is not None:
             sys.exit(method())
-        # if method is not None and (method != self.print_usage or unknown_args == []):
-        #     namespace_args = namespace_dict.pop('arguments', [])
-        #     for uk_arg in unknown_args:
-        #         search = re.search('--(?P<key>.*?)=(?P<value>.*)', uk_arg)
-        #         if search:
-        #             groupdict = search.groupdict()
-        #             namespace_dict[groupdict['key']] = groupdict['value']
-        #
-        #         else:
-        #             namespace_args.append(uk_arg)
-        #
-        #     method_return = method(*namespace_args, **namespace_dict)
-        #     if method_return is None:
-        #         method_return = 0
-        #     sys.exit(method_return)
+        if method is not None and (method != self.print_usage or unknown_args == []):
+            namespace_args = namespace_dict.pop('arguments', [])
+            for uk_arg in unknown_args:
+                search = re.search('--(?P<key>.*?)=(?P<value>.*)', uk_arg)
+                if search:
+                    groupdict = search.groupdict()
+                    namespace_dict[groupdict['key']] = groupdict['value']
+
+                else:
+                    namespace_args.append(uk_arg)
+
+            method_return = method(*namespace_args, **namespace_dict)
+            if method_return is None:
+                method_return = 0
+            sys.exit(method_return)
 
         return super(ArgumentParser, self).parse_args(args, namespace)
 

@@ -12,6 +12,8 @@ class ArgumentAction(argparse.Action):
                  nargs_max,
                  required_params,
                  optional_params,
+                 generic_args_param,
+                 generic_kwargs_param,
                  **kwargs):
 
         self.method = method
@@ -19,6 +21,8 @@ class ArgumentAction(argparse.Action):
         self.nargs_max = nargs_max
         self.required_params = required_params
         self.optional_params = optional_params
+        self.generic_args_param = generic_args_param
+        self.generic_kwargs_param = generic_kwargs_param
         super(ArgumentAction, self).__init__(**kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
@@ -29,4 +33,13 @@ class ArgumentAction(argparse.Action):
             sys.stderr.write(error_message)
             sys.exit(2)
 
-        namespace.methods_to_run[self.dest] = ArgumentMethod(self.method, values)
+        args = []
+        kwargs = {}
+        for v in values:
+            name, _, value = v.partition('=')
+            if value:
+                kwargs[name] = value
+            else:
+                args.append(v)
+
+        namespace.methods_to_run[self.dest] = ArgumentMethod(self.method, args, kwargs)
