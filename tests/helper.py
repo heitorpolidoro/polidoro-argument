@@ -58,8 +58,11 @@ class TestCase(object):
 
         if decorator == 'Argument':
             self.usage = '[--%s%s]' % (method_name, ' ' + ' '.join(args_help) if args_help else '')
-            self.help = ('--%s%s.*%s' % (method_name, ' ' + ' '.join(args_help) if args_help else '', help_info)).replace('[', '\[')
+            self.help = '--%s%s.*%s' % (method_name, ' ' + ' '.join(args_help) if args_help else '', help_info)
+            self.help_regex = self.help.replace('[', '\[')
             self.method_call = '"--%s%s"' % (method_name, ' ' + ' '.join(self.args_call) if self.args_call else '')
+
+        self.args_call = [re.sub(r'.*=', '', a) for a in self.args_call]
 
     def __call__(self):
         exec(self.method)
