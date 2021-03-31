@@ -3,6 +3,7 @@ import argparse
 from polidoro_argument.argument_action import ArgumentAction
 
 
+# noinspection PyProtectedMember
 class ArgumentHelpFormatter(argparse.HelpFormatter):
     def _format_args(self, action, default_metavar):
         if isinstance(action, ArgumentAction) and action.nargs == '*':
@@ -13,5 +14,11 @@ class ArgumentHelpFormatter(argparse.HelpFormatter):
                 help_str.append('[%s=value]' % opt_param)
             return ' '.join(help_str)
 
-        # noinspection PyProtectedMember
         return super(ArgumentHelpFormatter, self)._format_args(action, default_metavar)
+
+    def _format_action(self, action):
+        if action.help == 'HIDE':
+            return self._join_parts(self._format_action(subaction)
+                                    for subaction in self._iter_indented_subactions(action))
+        else:
+            return super(ArgumentHelpFormatter, self)._format_action(action)

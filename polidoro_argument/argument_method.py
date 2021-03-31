@@ -10,5 +10,5 @@ class ArgumentMethod(object):
         self.kwargs = kwargs
         self.order = datetime.utcnow()
 
-    def __call__(self):
-        return self.method(*self.args, **self.kwargs)
+    def __call__(self, *args, **kwargs):
+        return self.method(*(*self.args, *args), **{**self.kwargs, **kwargs})

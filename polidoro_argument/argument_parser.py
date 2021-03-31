@@ -22,19 +22,36 @@ class ArgumentParser(argparse.ArgumentParser):
             super(ArgumentParser, self).__init__(*args, formatter_class=ArgumentHelpFormatter, **kwargs)
             ArgumentParser._parsers[parser_id] = self
 
-    def parse_known_args(self, args=None, namespace=None):
-        if self.get_default('methods_to_run') is None:
-            self.set_defaults(methods_to_run={})
-        namespace, args = super(ArgumentParser, self).parse_known_args(args, namespace)
-        if namespace.methods_to_run.values():
-            for argument_method in sorted(namespace.methods_to_run.values(), key=lambda arg_method: arg_method.order):
-                resp = argument_method()
+    def parse_args(self, args=None, namespace=None):
+        namespace = super(ArgumentParser, self).parse_args(args=args, namespace=namespace)
+        namespace_dict = namespace.__dict__
+        methods_to_run = namespace_dict.pop('methods_to_run')
+        if methods_to_run:
+            call_args = namespace_dict.pop('arguments', [])
+            call_kwargs = namespace_dict
+
+            for argument_method in sorted(methods_to_run.values(), key=lambda arg_method: arg_method.order):
+                resp = argument_method(*call_args, **call_kwargs)
                 if resp is not None:
                     print(resp)
             sys.exit(0)
 
         self.print_usage()
         self.exit()
+
+    def parse_known_args(self, args=None, namespace=None):
+        if self.get_default('methods_to_run') is None:
+            self.set_defaults(methods_to_run={})
+        namespace, args = super(ArgumentParser, self).parse_known_args(args, namespace)
+        generic_kwargs_param = getattr(namespace, 'generic_kwargs_param', None)
+        if generic_kwargs_param:
+            delattr(namespace, 'generic_kwargs_param')
+            for arg in list(args):
+                name, _, value = arg.partition('=')
+                if value:
+                    setattr(namespace, name, value)
+                    args.remove(arg)
+        return namespace, args
 
     @staticmethod
     def generate_argument_action_kwargs(method):

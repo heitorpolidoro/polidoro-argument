@@ -3,68 +3,85 @@ from string import Template
 
 from helper import generate_tests
 
-
 base_template = """
 import re
 import pytest
 from polidoro_argument.argument_parser import ArgumentParser
 ${import_str}
 
-parser = ArgumentParser(prog='test')
 
 @pytest.fixture(autouse=True)
 def clear_parser():
-    parser = ArgumentParser()
-    parser.set_defaults(methods_to_run={})
+    ArgumentParser._parsers = {} 
 
-${method}
 
 def test_usage(capsys):
+    parser = ArgumentParser(prog='test${decorator}')
+${method}
 ${test_usage}
 
 def test_help(capsys):
+    parser = ArgumentParser(prog='test${decorator}')
+${method}
 ${test_help}
 
 def test_successful_call(capsys):
+    parser = ArgumentParser(prog='test${decorator}')
+${method}
 ${test_successful_call}
 """
 
 
-def generate_argument_test_files():
-    test_usage = """
+test_usage = """
     with pytest.raises(SystemExit) as exit_info:
         parser.parse_args()
     assert exit_info.value.code == 0
-
+    
     out_err = capsys.readouterr()
     output = re.sub(r'\\n *', ' ', out_err.out)
     assert '${usage}' in output, "in:\\n%s\\nshould have %s" % (output, '${usage}')
-    """
+"""
 
-    test_help = """
-    with pytest.raises(SystemExit) as exit_info:
-        parser.parse_args(['--help'])
-    assert exit_info.value.code == 0
-
-    out_err = capsys.readouterr()
-    output = out_err.out
-    assert re.search(r'${help_regex}', output, flags=re.DOTALL), "in:\\n%s\\nshould have %s" % (output, '${help}\\n')
-    """
-    
-    test_successful_call = """
+test_successful_call = """
     with pytest.raises(SystemExit) as exit_info:
         parser.parse_args(${method_call}.split())
     assert exit_info.value.code == 0
     
     out_err = capsys.readouterr()
     output = out_err.out
-    assert_str = "${method_name} called with these arguments: " + str(${args_call})
+    assert_str = "${decorator_name} ${method_name} called with these arguments: ${args_call}"
     assert assert_str in output
-    """
+"""
+
+
+def generate_argument_test_files():
+    test_help = """
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args(['--help'])
+    assert exit_info.value.code == 0
+    
+    out_err = capsys.readouterr()
+    output = out_err.out
+    assert re.search(r'${help_regex}', output, flags=re.DOTALL), "in:\\n%s\\nshould have %s" % (output, '${help}\\n')
+"""
     generate_test_files('Argument', test_usage, test_help, test_successful_call)
 
 
+def generate_command_test_files():
+    test_help = """
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args(['--help'])
+    assert exit_info.value.code == 0
+    
+    out_err = capsys.readouterr()
+    output = out_err.out
+    assert re.search(r'${help_regex}', output, flags=re.DOTALL), "in:\\n%s\\nshould have %s" % (output, '${help}\\n')
+"""
+    generate_test_files('Command', test_usage, test_help, test_successful_call)
+
+
 def generate_test_files(decorator, test_usage, test_help, test_successful_call):
+    tests = 37
     for test_case in generate_tests(decorator):
         import_str = 'from polidoro_argument.%s import %s' % (decorator.lower(), decorator)
         file_name = '_'.join([decorator.lower(), test_case.method_name, 'test.py'])
@@ -78,11 +95,17 @@ def generate_test_files(decorator, test_usage, test_help, test_successful_call):
                 test_help=test_help,
                 test_successful_call=test_successful_call,
                 import_str=import_str,
+                decorator=decorator,
                 **test_case_dict
             )
             arq.write(Template(template).substitute(
+                decorator_name=decorator,
                 **test_case_dict
             ))
+        tests -= 1
+        if tests == 0:
+            return
 
 
 generate_argument_test_files()
+generate_command_test_files()

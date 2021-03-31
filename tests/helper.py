@@ -3,18 +3,17 @@ import re
 from string import Template
 
 TEMPLATE = """
-@$decorator
-def ${method_name}(${signature}):
-    args_to_print = []
-    for arg_to_print in ${arguments}:
-        if isinstance(arg_to_print, tuple):
-            args_to_print += arg_to_print
-        elif isinstance(arg_to_print, dict):
-            args_to_print += arg_to_print.values()
-        else:
-            args_to_print.append(arg_to_print)
-    ${print_or_return}("${method_name} called with these arguments: " + str(args_to_print))
-    """
+    @${decorator}
+    def ${method_name}(${signature}):
+        args_to_print = []
+        for arg_to_print in ${arguments}:
+            if isinstance(arg_to_print, tuple):
+                args_to_print += arg_to_print
+            elif isinstance(arg_to_print, dict):
+                args_to_print += arg_to_print.values()
+            else:
+                args_to_print.append(arg_to_print)
+        ${print_or_return}("${decorator_name} ${method_name} called with these arguments: " + str(args_to_print))"""
 
 
 class TestCase(object):
@@ -51,6 +50,7 @@ class TestCase(object):
 
         self.method = Template(TEMPLATE).substitute(
             decorator=decorator + '(help="%s")' % help_info,
+            decorator_name=decorator,
             method_name=method_name,
             signature=', '.join(args),
             arguments=self.arguments_to_print,
@@ -59,8 +59,16 @@ class TestCase(object):
         if decorator == 'Argument':
             self.usage = '[--%s%s]' % (method_name, ' ' + ' '.join(args_help) if args_help else '')
             self.help = '--%s%s.*%s' % (method_name, ' ' + ' '.join(args_help) if args_help else '', help_info)
-            self.help_regex = self.help.replace('[', '\[')
+            self.help_regex = self.help.replace('[', '\\[')
             self.method_call = '"--%s%s"' % (method_name, ' ' + ' '.join(self.args_call) if self.args_call else '')
+        elif decorator == 'Command':
+            self.usage = '{%s}' % method_name
+            self.help = '%s.*%s' % (method_name, help_info)
+            self.help_regex = self.help.replace('[', '\\[')
+            self.method_call = '"%s%s"' % (
+                method_name,
+                ' ' + ' '.join(['--%s' % arg if '=' in arg else arg for arg in self.args_call]) if self.args_call else ''
+            )
 
         self.args_call = [re.sub(r'.*=', '', a) for a in self.args_call]
 

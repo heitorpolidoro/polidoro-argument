@@ -42,4 +42,5 @@ class ArgumentAction(argparse.Action):
             else:
                 args.append(v)
 
+        namespace.__dict__.pop(self.method.__name__)
         namespace.methods_to_run[self.dest] = ArgumentMethod(self.method, args, kwargs)
