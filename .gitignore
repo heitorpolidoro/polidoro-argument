@@ -6,4 +6,4 @@
 __pycache__
 /venv/
 .coverage
-/tests/*_method_with_*
+/tests/test_files

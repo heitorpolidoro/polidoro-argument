@@ -34,7 +34,7 @@ ${test_successful_call}
 
 test_usage = """
     with pytest.raises(SystemExit) as exit_info:
-        parser.parse_args()
+        parser.parse_args([])
     assert exit_info.value.code == 0
     
     out_err = capsys.readouterr()
@@ -81,14 +81,17 @@ def generate_command_test_files():
 
 
 def generate_test_files(decorator, test_usage, test_help, test_successful_call):
-    tests = 37
+
     for test_case in generate_tests(decorator):
         import_str = 'from polidoro_argument.%s import %s' % (decorator.lower(), decorator)
         file_name = '_'.join([decorator.lower(), test_case.method_name, 'test.py'])
         if not os.getcwd().endswith('/tests'):
-            file_name = 'tests/' + file_name
+            os.chdir('tests')
 
-        with open(file_name, 'w') as arq:
+        if not os.path.exists('test_files'):
+            os.mkdir('test_files')
+
+        with open('test_files/' + file_name, 'w') as arq:
             test_case_dict = {k: v for k, v in test_case.__dict__.items()}
             template = Template(base_template).substitute(
                 test_usage=test_usage,
@@ -102,9 +105,6 @@ def generate_test_files(decorator, test_usage, test_help, test_successful_call):
                 decorator_name=decorator,
                 **test_case_dict
             ))
-        tests -= 1
-        if tests == 0:
-            return
 
 
 generate_argument_test_files()
