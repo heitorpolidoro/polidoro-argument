@@ -105,5 +105,6 @@ class ArgumentParser(argparse.ArgumentParser):
             'optional_params': optional_params,
             'generic_args_param': generic_args_param,
             'generic_kwargs_param': generic_kwargs_param,
+            # 'help': kwargs.get('help', method.__name__)
         })
         return kwargs

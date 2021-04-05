@@ -1,5 +1,6 @@
 import argparse
 
+from polidoro_argument import HIDE_HELP
 from polidoro_argument.argument_action import ArgumentAction
 
 
@@ -17,7 +18,7 @@ class ArgumentHelpFormatter(argparse.HelpFormatter):
         return super(ArgumentHelpFormatter, self)._format_args(action, default_metavar)
 
     def _format_action(self, action):
-        if action.help == 'HIDE':
+        if action.help == HIDE_HELP:
             return self._join_parts(self._format_action(subaction)
                                     for subaction in self._iter_indented_subactions(action))
         else:

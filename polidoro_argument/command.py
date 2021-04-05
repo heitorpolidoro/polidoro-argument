@@ -2,7 +2,7 @@
 Decorator to add an function/method as command in parser
 """
 
-from polidoro_argument import ArgumentParser
+from polidoro_argument import ArgumentParser, HIDE_HELP
 from polidoro_argument.argument_method import ArgumentMethod
 
 
@@ -28,8 +28,9 @@ class Command(object):
         parser = ArgumentParser()
 
         argument_action_kwargs = ArgumentParser.generate_argument_action_kwargs(method)
+        kwargs.setdefault('help', '')
 
-        subparsers = parser.add_subparsers(help='HIDE')
+        subparsers = parser.add_subparsers(help=HIDE_HELP, title="Commands", metavar='command')
         parser = subparsers.add_parser(
             method_name,
             prog='%s %s' % (parser.prog, method_name),
