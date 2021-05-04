@@ -1,5 +1,5 @@
 # noinspection PyProtectedMember
-from argparse import HelpFormatter
+from argparse import HelpFormatter, SUPPRESS, _SubParsersAction
 
 from polidoro_argument.action import _Action
 
@@ -23,3 +23,14 @@ class ArgumentHelpFormatter(HelpFormatter):
 
         else:
             return super(ArgumentHelpFormatter, self)._format_args(action, default_metavar)
+
+    def _format_action_invocation(self, action):
+        if isinstance(action, _SubParsersAction):
+            return SUPPRESS
+        return super(ArgumentHelpFormatter, self)._format_action_invocation(action)
+
+    def _join_parts(self, part_strings):
+        return ''.join([part
+                        for part in part_strings
+                        if part and SUPPRESS not in part])
+
