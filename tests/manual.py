@@ -1,6 +1,4 @@
-from polidoro_argument import Command
-from polidoro_argument.argument import Argument
-from polidoro_argument.polidoro_argument_parser import PolidoroArgumentParser
+from polidoro_argument import Command, Argument, PolidoroArgumentParser
 
 
 @Command(help='help')
