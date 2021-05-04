@@ -37,9 +37,17 @@ def _get_action_name(argument):
 
 # noinspection PyProtectedMember
 class PolidoroArgumentParser(ArgumentParser):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, version=None, **kwargs):
         super(PolidoroArgumentParser, self).__init__(*args, formatter_class=ArgumentHelpFormatter, **kwargs)
         self.subparsers = None
+
+        if version:
+            self.add_argument(
+                '-v',
+                '--version',
+                action='version',
+                version='%(prog)s ' + version
+            )
 
     def parse_args(self, args=None, namespace=None):
         # Add arguments and commands to the parser

@@ -29,7 +29,7 @@ class TestCLI(object):
         pass
 
 
-parser = PolidoroArgumentParser()
+parser = PolidoroArgumentParser(version='1.0')
 # subparsers = parser.add_subparsers()
 # p1 = subparsers.add_parser('1')
 # p2 = subparsers.add_parser('2')
