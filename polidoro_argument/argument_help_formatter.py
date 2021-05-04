@@ -1,24 +1,25 @@
-import argparse
-
-from polidoro_argument.argument_action import ArgumentAction
-
-
 # noinspection PyProtectedMember
-class ArgumentHelpFormatter(argparse.HelpFormatter):
+from argparse import HelpFormatter
+
+from polidoro_argument.action import _Action
+
+
+class ArgumentHelpFormatter(HelpFormatter):
     def _format_args(self, action, default_metavar):
-        if isinstance(action, ArgumentAction) and action.nargs == '*':
-            help_str = list(action.required_params)
-            if action.generic_args_param:
-                help_str.append('[%s ...]' % action.generic_args_param)
-            for opt_param in action.optional_params:
-                help_str.append('[%s=value]' % opt_param)
-            return ' '.join(help_str)
+        if isinstance(action, _Action):
+            args = action.positional[:]
 
-        return super(ArgumentHelpFormatter, self)._format_args(action, default_metavar)
+            if isinstance(action.nargs, str):
+                if action.var_positional:
+                    args.append('[%s [%s ...]]' % ((action.var_positional, ) * 2))
 
-    def _format_action(self, action):
-        if action.help == 'HIDE':
-            return self._join_parts(self._format_action(subaction)
-                                    for subaction in self._iter_indented_subactions(action))
+                if action.keyword:
+                    args.extend('[%s=VALUE]' % p for p in action.keyword)
+
+                if action.var_keyword:
+                    args.append('[%s=VALUE [%s=VALUE ...]]' % ((action.var_keyword, ) * 2))
+
+            return ' '.join(args)
+
         else:
-            return super(ArgumentHelpFormatter, self)._format_action(action)
+            return super(ArgumentHelpFormatter, self)._format_args(action, default_metavar)
