@@ -1,111 +1,86 @@
 import os
+import shutil
 from string import Template
 
-from helper import generate_tests
+from tests.helper import ArgumentTestCase, CommandTestCase
 
-base_template = """
+# TESTS = 36
+TESTS = 36
+DECORATORS = ['Argument', 'Command']
+# DECORATORS = ['Argument']
+# DECORATORS = ['Command']
+
+TEMPLATE = """import pytest
 import re
-import pytest
-from polidoro_argument.argument_parser import ArgumentParser
-${import_str}
+from tests.helper import TestCase
+from polidoro_argument.polidoro_argument_parser import PolidoroArgumentParser
+from polidoro_argument.argument import Argument
+from polidoro_argument.command import Command
+
+parser = None
 
 
-@pytest.fixture(autouse=True)
-def clear_parser():
-    ArgumentParser._parsers = {} 
-
-
-def test_usage(capsys):
-    parser = ArgumentParser(prog='test${decorator}')
-${method}
-${test_usage}
-
-def test_help(capsys):
-    parser = ArgumentParser(prog='test${decorator}')
-${method}
-${test_help}
-
-def test_successful_call(capsys):
-    parser = ArgumentParser(prog='test${decorator}')
-${method}
-${test_successful_call}
+@pytest.fixture(scope="module", autouse=True)
+def setup():
+    print("----------------------------------")
+    global parser
+    parser = PolidoroArgumentParser(prog='test$decorator')
+    Argument._arguments = []
+    Command._commands = []
+${methods}
+${tests}
 """
 
+if not os.getcwd().endswith('/tests'):
+    os.chdir('tests')
 
-test_usage = """
-    with pytest.raises(SystemExit) as exit_info:
-        parser.parse_args([])
-    assert exit_info.value.code == 0
-    
-    out_err = capsys.readouterr()
-    output = re.sub(r'\\n *', ' ', out_err.out)
-    assert '${usage}' in output, "in:\\n%s\\nshould have %s" % (output, '${usage}')
-"""
-
-test_successful_call = """
-    with pytest.raises(SystemExit) as exit_info:
-        parser.parse_args(${method_call}.split())
-    assert exit_info.value.code == 0
-    
-    out_err = capsys.readouterr()
-    output = out_err.out
-    assert_str = "${decorator_name} ${method_name} called with these arguments: ${args_call}"
-    assert assert_str in output
-"""
+if os.path.exists('test_files'):
+    shutil.rmtree('test_files')
+os.mkdir('test_files')
+os.chdir('test_files')
 
 
-def generate_argument_test_files():
-    test_help = """
-    with pytest.raises(SystemExit) as exit_info:
-        parser.parse_args(['--help'])
-    assert exit_info.value.code == 0
-    
-    out_err = capsys.readouterr()
-    output = out_err.out
-    assert re.search(r'${help_regex}', output, flags=re.DOTALL), "in:\\n%s\\nshould have %s" % (output, '${help}\\n')
-"""
-    generate_test_files('Argument', test_usage, test_help, test_successful_call)
+def generate_test_cases(decorator):
+    count = 0
+    test_cases = []
+    for var_keyword in [False, True]:
+        for n_keyword in range(3):
+            for var_positional in [False, True]:
+                for n_positional in range(3):
+                    if decorator == 'Argument':
+                        test_cases.append(ArgumentTestCase(n_positional, var_positional, n_keyword, var_keyword))
+                    elif decorator == 'Command':
+                        test_cases.append(CommandTestCase(n_positional, var_positional, n_keyword, var_keyword))
+
+                    count += 1
+                    if TESTS == count:
+                        return test_cases
+
+    return test_cases
 
 
-def generate_command_test_files():
-    test_help = """
-    with pytest.raises(SystemExit) as exit_info:
-        parser.parse_args(['--help'])
-    assert exit_info.value.code == 0
-    
-    out_err = capsys.readouterr()
-    output = out_err.out
-    assert re.search(r'${help_regex}', output, flags=re.DOTALL), "in:\\n%s\\nshould have %s" % (output, '${help}\\n')
-"""
-    generate_test_files('Command', test_usage, test_help, test_successful_call)
+def generate_test_files():
+    for decorator in DECORATORS:
+        with open(decorator.lower() + '_test.py', 'w') as arq:
+            methods = []
+            tests = []
+            for test_case in generate_test_cases(decorator):
+                print("Generating test for: %s..." % test_case.method_name)
+                methods.append(test_case.method_template)
+                tests.append(test_case.help_test)
+                tests.append(test_case.call_test)
+                tests.append(test_case.one_less_arg_test)
+                tests.append(test_case.one_more_arg_test)
+                tests.append(test_case.one_more_kwarg_test)
 
+            tests = [t for t in tests if t]
 
-def generate_test_files(decorator, test_usage, test_help, test_successful_call):
-
-    for test_case in generate_tests(decorator):
-        import_str = 'from polidoro_argument.%s import %s' % (decorator.lower(), decorator)
-        file_name = '_'.join([decorator.lower(), test_case.method_name, 'test.py'])
-        if not os.getcwd().endswith('/tests'):
-            os.chdir('tests')
-
-        if not os.path.exists('test_files'):
-            os.mkdir('test_files')
-
-        with open('test_files/' + file_name, 'w') as arq:
-            test_case_dict = {k: v for k, v in test_case.__dict__.items()}
-            template = Template(base_template).substitute(
-                test_usage=test_usage,
-                test_help=test_help,
-                test_successful_call=test_successful_call,
-                import_str=import_str,
+            arq.write(Template(TEMPLATE).substitute(
                 decorator=decorator,
-                **test_case_dict
-            )
-            arq.write(Template(template).substitute(
-                decorator_name=decorator,
-                **test_case_dict
+                decorator_import='from polidoro_argument.%s import %s' % (decorator.lower(), decorator),
+                methods=''.join(methods),
+                tests='\n'.join(tests)
             ))
 
 
-generate_argument_test_files()
-generate_command_test_files()
+generate_test_files()

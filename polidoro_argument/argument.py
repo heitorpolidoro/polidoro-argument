@@ -1,30 +1,28 @@
 """
 Decorator to add an function/method as argument in parser
 """
-from polidoro_argument.argument_parser import ArgumentParser
+
+from polidoro_argument.params import _ArgumentParams
 
 
 class Argument(object):
+    _arguments = []
+
     def __new__(cls, method=None, **kwargs):
         if callable(method):
             # When the decorator has no arguments
-            # noinspection PyTypeChecker
-            return Argument._add_argument(method, **kwargs)
+            Argument._arguments.append(_ArgumentParams(method, **kwargs))
+            return method
         else:
             # When the decorator has arguments
             def wrapper(_method):
-                return Argument._add_argument(_method, **kwargs)
+                Argument._arguments.append(_ArgumentParams(_method, **kwargs))
+                return _method
 
             return wrapper
 
     @staticmethod
-    def _add_argument(method, **kwargs):
-        """ Add the method as argument in parser, to be callas as --METHOD_NAME """
-        if not hasattr(method, '__name__'):
-            raise RuntimeError('The "method" must have the attribute "__name__"!')
-        parser = ArgumentParser()
-
-        kwargs.update(ArgumentParser.generate_argument_action_kwargs(method))
-        parser.add_argument('--' + method.__name__, **kwargs)
-
-        return method
+    def get_argument(item):
+        for a in Argument._arguments:
+            if item in [a.method_name, a.method]:
+                return a

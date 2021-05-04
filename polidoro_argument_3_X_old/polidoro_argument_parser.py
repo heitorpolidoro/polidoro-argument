@@ -2,8 +2,8 @@ import argparse
 import inspect
 import sys
 
-from polidoro_argument.argument_action import ArgumentAction
-from polidoro_argument.argument_help_formatter import ArgumentHelpFormatter
+from polidoro_argument_3_X_old.argument_action import ArgumentAction
+from polidoro_argument_3_X_old.argument_help_formatter import ArgumentHelpFormatter
 
 
 class ArgumentParser(argparse.ArgumentParser):
