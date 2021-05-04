@@ -1,42 +1,29 @@
 """
-A Module to make easier to create script with command line arguments.
-See README.md for more information
+Decorator to add an function/method as argument in parser
 """
-import inspect
 
-from polidoro_argument.custom_action import CustomAction
+from polidoro_argument.params import _ArgumentParams
 
 
-class Argument:  # pylint: disable=too-few-public-methods
-    """
-    Decorator to create a command line argument
-    """
-    arguments = []
+class Argument(object):
+    _arguments = []
 
-    def __init__(self, method=None, **kwargs):
-        self.method = method
-        # if method is None the decorator has parameters
-        if method is None:
-            self.kwargs = kwargs
+    def __new__(cls, method=None, **kwargs):
+        if callable(method):
+            # When the decorator has no arguments
+            Argument._arguments.append(_ArgumentParams(method, **kwargs))
+            return method
         else:
-            self.args = tuple(['--' + method.__name__])
+            # When the decorator has arguments
+            def wrapper(_method):
+                Argument._arguments.append(_ArgumentParams(_method, **kwargs))
+                return _method
 
-            self.kwargs.update({
-                'action': CustomAction,
-                'method': method,
-            })
-            parameters = [p for p in inspect.signature(method).parameters if not p.startswith('_')]
-            # nargs = number of arguments in method
-            self.kwargs['nargs'] = len(parameters)
-            if parameters:
-                self.kwargs['metavar'] = ' '.join(parameters)
+            return wrapper
 
-            self.arguments.append(self)
-
-    def __call__(self, *args, **kwargs):
-        # if method is None the decorator has parameters and the first argument is the method
-        if self.method is None:
-            self.method = list(args)[0]
-            self.__init__(**vars(self))
-            return self
-        return self.method(*args, **kwargs)
+    @staticmethod
+    def get_argument(item):
+        # Return the Argument with the same name as item ou same method
+        for a in Argument._arguments:
+            if item in [a.method_name, a.method]:
+                return a
