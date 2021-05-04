@@ -23,6 +23,7 @@ class Argument(object):
 
     @staticmethod
     def get_argument(item):
+        # Return the Argument with the same name as item ou same method
         for a in Argument._arguments:
             if item in [a.method_name, a.method]:
                 return a

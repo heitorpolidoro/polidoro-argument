@@ -1,5 +1,5 @@
 """
-Decorator to add an function/method as argument in parser
+Decorator to add an function/method as command in parser
 """
 
 from polidoro_argument.params import _CommandParams
@@ -23,6 +23,7 @@ class Command(object):
 
     @staticmethod
     def get_command(item):
+        # Return the Argument with the same name as item ou same method
         for c in Command._commands:
             if item in [c.method_name, c.method]:
                 return c

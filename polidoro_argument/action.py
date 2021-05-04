@@ -1,4 +1,7 @@
 import argparse
+"""
+Actions to execute a Argument method or set to execute a Command method
+"""
 
 
 class _Action(argparse.Action):
@@ -21,6 +24,7 @@ class _Action(argparse.Action):
 
 class ArgumentAction(_Action):
     def __call__(self, parser, namespace, values, option_string=None):
+        # Parse positional and keyword arguments and run the Argument method.
         args = []
         kwargs = {}
         for v in values:
@@ -38,7 +42,8 @@ class ArgumentAction(_Action):
 class CommandAction(_Action):
     def __call__(self, parser, namespace, values, option_string=None):
         from polidoro_argument.polidoro_argument_parser import METHOD_TO_RUN
-
+        # Set to run the Command method with VALUES as positional arguments.
+        # Keywords arguments are parsed in PolidoroArgumentParser.parse_args
         setattr(namespace, METHOD_TO_RUN, {
             'method': self.method,
             'args': values,

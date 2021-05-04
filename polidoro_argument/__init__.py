@@ -4,7 +4,8 @@ See README.md for more information
 """
 from polidoro_argument.argument import Argument
 from polidoro_argument.command import Command
+from polidoro_argument.polidoro_argument_parser import PolidoroArgumentParser
 
-NAME = 'py_argument'
+NAME = 'polidoro_argument'
 VERSION = '3.0.0'
 

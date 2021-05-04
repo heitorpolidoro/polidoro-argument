@@ -1,8 +1,10 @@
+"""
+Classes to inspect the methods signature and configure the Argument or Command
+"""
+
 import inspect
-from argparse import SUPPRESS
 
 from polidoro_argument.action import ArgumentAction, CommandAction
-from polidoro_argument.polidoro_argument_parser import PolidoroArgumentParser
 
 
 class _Params(object):
@@ -41,13 +43,15 @@ class _Params(object):
 
     @staticmethod
     def get_final_parser(parser, method):
+        # Get the final parser based on method.__qualname__
         full_name = method.__qualname__.replace('setup.<locals>.', '')
         for name in [n.lower() for n in reversed(full_name.split('.')[:-1])]:
             subparsers = _Params.get_subparsers(parser)
             sub_parser = subparsers.choices.get(name, None)
             if sub_parser is None:
                 clazz = _Params.get_class_that_defined_object(method)
-                clazz_attrs = {k: v for k, v in clazz.__dict__.items() if not k.startswith('__') and not isinstance(v, staticmethod)}
+                clazz_attrs = {k: v for k, v in clazz.__dict__.items() if
+                               not k.startswith('__') and not isinstance(v, staticmethod) and not inspect.isfunction(v)}
                 sub_parser = subparsers.add_parser(
                     name,
                     prog='%s %s' % (parser.prog, name),
@@ -59,17 +63,13 @@ class _Params(object):
 
     @staticmethod
     def get_subparsers(parser):
+        # Return the subparsers or create if not exists
         if parser.subparsers:
             return parser.subparsers
         return parser.add_subparsers()
 
     @staticmethod
     def get_class_that_defined_object(obj):
-        """
-        :param obj: The object to get the classe
-        :return: the class that define the object
-        """
-
         if inspect.ismethod(obj):
             for cls in inspect.getmro(obj.__self__.__class__):
                 if cls.__dict__.get(obj.__name__) is obj:
@@ -83,9 +83,8 @@ class _Params(object):
         return getattr(obj, '__objclass__', None)
 
 
-
 class _ArgumentParams(_Params):
-    def add_argument(self, parser: PolidoroArgumentParser):
+    def add_argument(self, parser):
         parser = self.get_final_parser(parser, self.method)
         parser.add_argument(
             '--' + self.method_name,
@@ -101,7 +100,7 @@ class _ArgumentParams(_Params):
 
 
 class _CommandParams(_Params):
-    def add_command(self, parser: PolidoroArgumentParser):
+    def add_command(self, parser):
         parser = self.get_final_parser(parser, self.method)
         subparsers = self.get_subparsers(parser)
         sub_parser = subparsers.add_parser(

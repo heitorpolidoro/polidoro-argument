@@ -1,10 +1,13 @@
+"""
+A wrapper over argparse.ArgumentParser
+"""
 from argparse import SUPPRESS, ArgumentParser, ArgumentError
 from string import Template
 
 from polidoro_argument.action import _Action
 from polidoro_argument.argument_help_formatter import ArgumentHelpFormatter
 
-METHOD_TO_RUN = '_METHODS_TO_RUN'
+METHOD_TO_RUN = '==METHODS_TO_RUN=='
 
 try:
     from gettext import gettext, ngettext
@@ -39,6 +42,7 @@ class PolidoroArgumentParser(ArgumentParser):
         self.subparsers = None
 
     def parse_args(self, args=None, namespace=None):
+        # Add arguments and commands to the parser
         self._add_arguments()
         self._add_commands()
         namespace, argv = self.parse_known_args(args, namespace)
@@ -46,6 +50,8 @@ class PolidoroArgumentParser(ArgumentParser):
         if argv:
             from polidoro_argument import Command
             if method_info and Command.get_command(method_info['method']).var_keyword:
+                # If there is args left but the method has a var_keyword,
+                # parse the keyword args left and set in namespace
                 for keyword_values in argv[:]:
                     if keyword_values.startswith('--') and '=' in keyword_values:
                         key, _, value = keyword_values.partition('=')
@@ -56,6 +62,7 @@ class PolidoroArgumentParser(ArgumentParser):
                 self.error(msg % ' '.join(argv))
 
         if method_info:
+            # Run Command method
             kwargs = {k: v for k, v in vars(namespace).items() if k not in ['positional', METHOD_TO_RUN]}
             resp = method_info['method'](*method_info['args'], **kwargs)
             if resp is not None:
@@ -83,6 +90,7 @@ class PolidoroArgumentParser(ArgumentParser):
                 command.added = True
 
     def _get_nargs_pattern(self, action):
+        # Override to enable keyword arguments as K
         if isinstance(action, _Action) and isinstance(action.nargs, str):
             pattern = ''
 
@@ -110,6 +118,7 @@ class PolidoroArgumentParser(ArgumentParser):
             return super(PolidoroArgumentParser, self)._get_nargs_pattern(action)
 
     def _match_argument(self, action, arg_strings_pattern):
+        # Override to show a better error message
         try:
             return super(PolidoroArgumentParser, self)._match_argument(action, arg_strings_pattern)
         except ArgumentError:
@@ -118,6 +127,7 @@ class PolidoroArgumentParser(ArgumentParser):
             raise
 
     def _parse_known_args(self, arg_strings, namespace):
+        # Override to parse the K pattern
         # replace arg strings that are file references
         if self.fromfile_prefix_chars is not None:
             arg_strings = self._read_args_from_files(arg_strings)

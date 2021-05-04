@@ -1,18 +1,13 @@
-import inspect
-from argparse import ArgumentParser
-
 from polidoro_argument import Command
 from polidoro_argument.argument import Argument
 from polidoro_argument.polidoro_argument_parser import PolidoroArgumentParser
 
 
-@staticmethod
 @Command(help='help')
 def command():
     print('command!')
 
 
-@staticmethod
 @Argument
 def argument():
     print('argument!')
@@ -31,6 +26,9 @@ class TestCLI(object):
     @Argument
     def argument():
         print('argument!')
+
+    def bla(self):
+        pass
 
 
 parser = PolidoroArgumentParser()
