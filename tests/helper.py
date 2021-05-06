@@ -2,7 +2,7 @@ import re
 from string import Template
 
 
-class TestCase(object):
+class _TestCase(object):
     def __init__(self, n_positional, var_positional, n_keyword, var_keyword):
         self.n_positional = n_positional
         self.var_positional = var_positional
@@ -11,6 +11,7 @@ class TestCase(object):
         self._method_name = None
         self.nargs = None
         self.put_help = bool((n_positional + n_keyword) % 2)
+        self.decorator = None
 
     @property
     def method_name(self):
@@ -132,11 +133,11 @@ class TestCase(object):
         for p in range(self.n_positional):
             args.append('positional_%d' % (p + 1))
         if self.var_positional:
-            args.append('\[var_positional \[var_positional ...]]')
+            args.append(r'\[var_positional \[var_positional ...]]')
         for k in range(self.n_keyword):
-            args.append('\[keyword_%d=VALUE]' % (k + 1))
+            args.append(r'\[keyword_%d=VALUE]' % (k + 1))
         if self.var_keyword:
-            args.append('\[var_keyword=VALUE \[var_keyword=VALUE ...]]')
+            args.append(r'\[var_keyword=VALUE \[var_keyword=VALUE ...]]')
         return args
 
     @property
@@ -232,14 +233,14 @@ def test_call_${method_name}_with_one_more_arg_test(capsys):
         raise NotImplementedError
 
 
-class ArgumentTestCase(TestCase):
+class ArgumentTestCase(_TestCase):
     def __init__(self, *args, **kwargs):
         super(ArgumentTestCase, self).__init__(*args, **kwargs)
         self.decorator = 'Argument'
 
     @property
     def method_usage(self):
-        return '\[' + ('--%s[ \\n]*%s' % (self.method_name, '[ \\n]*'.join(self.usage_args))).strip() + ']'
+        return r'\[' + ('--%s[ \\n]*%s' % (self.method_name, '[ \\n]*'.join(self.usage_args))).strip() + ']'
 
     def method_call(self, n_positional=None, var_positional=None, n_keyword=None, var_keyword=None):
         args = self.positional_args(n_positional, var_positional)
@@ -274,7 +275,7 @@ def test_call_${method_name}_with_one_less_arg_test(capsys):
     assert exit_info.value.code == 2
     
     output = capsys.readouterr().err
-    assert re.search(r'test${decorator}: error: argument --${method_name}: expected %s argument' % TestCase.get_action_nargs('${method_name}'), output), output
+    assert re.search(r'test${decorator}: error: argument --${method_name}: expected %s argument' % _TestCase.get_action_nargs('${method_name}'), output), output
 """
         return Template(template).substitute(
             method_call=self.method_call(n_positional=self.n_positional - 1, var_positional=False),
@@ -303,7 +304,7 @@ def test_call_${method_name}_with_one_more_kwarg_test(capsys):
         )
 
 
-class CommandTestCase(TestCase):
+class CommandTestCase(_TestCase):
     def __init__(self, *args, **kwargs):
         super(CommandTestCase, self).__init__(*args, **kwargs)
         self.decorator = 'Command'

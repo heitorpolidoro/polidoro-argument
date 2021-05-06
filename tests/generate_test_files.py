@@ -12,7 +12,7 @@ DECORATORS = ['Argument', 'Command']
 
 TEMPLATE = """import pytest
 import re
-from tests.helper import TestCase
+from tests.helper import _TestCase
 from polidoro_argument.polidoro_argument_parser import PolidoroArgumentParser
 from polidoro_argument.argument import Argument
 from polidoro_argument.command import Command

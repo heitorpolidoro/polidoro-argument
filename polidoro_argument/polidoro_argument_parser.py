@@ -54,11 +54,11 @@ class PolidoroArgumentParser(ArgumentParser):
         self._add_arguments()
         self._add_commands()
         namespace, argv = self.parse_known_args(args, namespace)
-        method_info = getattr(namespace, METHOD_TO_RUN, None)
+        method_info = getattr(namespace, METHOD_TO_RUN, {})
         if argv:
             from polidoro_argument import Command
-            command = Command.get_command(method_info['method'])
-            if method_info and command.var_keyword:
+            command = Command.get_command(method_info.get('method', None))
+            if command and command.var_keyword:
                 # If there is args left but the method has a var_keyword,
                 # parse the keyword args left and set in namespace
                 for keyword_values in argv[:]:
@@ -67,7 +67,7 @@ class PolidoroArgumentParser(ArgumentParser):
                         setattr(namespace, key[2:], value)
                         argv.remove(keyword_values)
             if argv:
-                if command.remainder:
+                if command and command.remainder:
                     for arg in argv:
                         method_info['args'].append(arg)
                 else:
