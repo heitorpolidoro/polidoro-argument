@@ -57,7 +57,8 @@ class PolidoroArgumentParser(ArgumentParser):
         method_info = getattr(namespace, METHOD_TO_RUN, None)
         if argv:
             from polidoro_argument import Command
-            if method_info and Command.get_command(method_info['method']).var_keyword:
+            command = Command.get_command(method_info['method'])
+            if method_info and command.var_keyword:
                 # If there is args left but the method has a var_keyword,
                 # parse the keyword args left and set in namespace
                 for keyword_values in argv[:]:
@@ -66,8 +67,12 @@ class PolidoroArgumentParser(ArgumentParser):
                         setattr(namespace, key[2:], value)
                         argv.remove(keyword_values)
             if argv:
-                msg = gettext('unrecognized arguments: %s')
-                self.error(msg % ' '.join(argv))
+                if command.remainder:
+                    for arg in argv:
+                        method_info['args'].append(arg)
+                else:
+                    msg = gettext('unrecognized arguments: %s')
+                    self.error(msg % ' '.join(argv))
 
         if method_info:
             # Run Command method

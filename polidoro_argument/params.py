@@ -8,7 +8,7 @@ from polidoro_argument.action import ArgumentAction, CommandAction
 
 
 class _Params(object):
-    def __init__(self, method, **kwargs):
+    def __init__(self, method, aliases=None, command_alias=None, **kwargs):
         self.method = method
         self.method_name = method.__name__
         self.kwargs = kwargs
@@ -18,12 +18,18 @@ class _Params(object):
         self.var_keyword = None
         self.nargs = None
         self.added = False
+        self.remainder = False
+        self.command_alias = [] if command_alias is None else command_alias
+        self.aliases = getattr(method, 'aliases', {}) if aliases is None else aliases
 
         self.inspect_signature()
+        self.kwargs.setdefault('help', '')
 
     def inspect_signature(self):
         for name, info in inspect.signature(self.method).parameters.items():
-            if not name.startswith('_'):
+            if name == '_remainder':
+                self.remainder = True
+            elif not name.startswith('_'):
                 if info.kind == inspect.Parameter.VAR_POSITIONAL:
                     self.var_positional = name
                 elif info.kind == inspect.Parameter.VAR_KEYWORD:
@@ -52,6 +58,8 @@ class _Params(object):
                 clazz = _Params.get_class_that_defined_object(method)
                 clazz_attrs = {k: v for k, v in clazz.__dict__.items() if
                                not k.startswith('__') and not isinstance(v, staticmethod) and not inspect.isfunction(v)}
+                clazz_attrs.setdefault('help', '')
+                clazz_attrs.setdefault('description', clazz_attrs['help'])
                 sub_parser = subparsers.add_parser(
                     name,
                     prog='%s %s' % (parser.prog, name),
@@ -76,10 +84,13 @@ class _Params(object):
                     return cls
             obj = obj.__func__  # fallback to __qualname__ parsing
         if inspect.isfunction(obj):
-            cls = getattr(inspect.getmodule(obj),
-                          obj.__qualname__.split('.<locals>', 1)[0].rsplit('.', 1)[0])
-            if isinstance(cls, type):
-                return cls
+            try:
+                cls = getattr(inspect.getmodule(obj),
+                              obj.__qualname__.split('.<locals>', 1)[0].rsplit('.', 1)[0])
+                if isinstance(cls, type):
+                    return cls
+            except AttributeError:
+                pass
         return getattr(obj, '__objclass__', None)
 
 
@@ -95,6 +106,7 @@ class _ArgumentParams(_Params):
             var_positional=self.var_positional,
             keyword=self.keyword,
             var_keyword=self.var_keyword,
+            remainder=self.remainder,
             **self.kwargs
         )
 
@@ -105,7 +117,9 @@ class _CommandParams(_Params):
         subparsers = self.get_subparsers(parser)
         sub_parser = subparsers.add_parser(
             self.method_name,
+            aliases=self.command_alias,
             prog='%s %s' % (parser.prog, self.method_name),
+            add_help=not self.remainder,
             **self.kwargs
         )
 
@@ -121,8 +135,19 @@ class _CommandParams(_Params):
             var_positional=self.var_positional,
             keyword=self.keyword,
             var_keyword=self.var_keyword,
+            remainder=self.remainder,
             **self.kwargs
         )
 
         for kw in self.keyword:
-            sub_parser.add_argument('--' + kw)
+            argument_kwargs = {}
+            default = inspect.signature(self.method).parameters[kw].default
+            if isinstance(default, bool):
+                argument_kwargs = {
+                    'action': ('store_%s' % (not default)).lower(),
+                    'default': default
+                }
+            name = ('--' + kw, )
+            if kw in self.aliases:
+                name += ('-' + self.aliases[kw], )
+            sub_parser.add_argument(*name, **argument_kwargs)

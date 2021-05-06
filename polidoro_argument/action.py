@@ -11,6 +11,7 @@ class _Action(argparse.Action):
                  var_positional,
                  keyword,
                  var_keyword,
+                 remainder=False,
                  **kwargs):
 
         self.method = method
@@ -18,6 +19,7 @@ class _Action(argparse.Action):
         self.var_positional = var_positional
         self.keyword = keyword
         self.var_keyword = var_keyword
+        self.remainder = remainder
 
         super(_Action, self).__init__(**kwargs)
 

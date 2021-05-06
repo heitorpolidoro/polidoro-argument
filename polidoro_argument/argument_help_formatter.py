@@ -32,6 +32,8 @@ class ArgumentHelpFormatter(HelpFormatter):
         # To hide subparsers group help
         if isinstance(action, _SubParsersAction):
             return SUPPRESS
+        if action.help == SUPPRESS:
+            return SUPPRESS
         return super(ArgumentHelpFormatter, self)._format_action_invocation(action)
 
     def _join_parts(self, part_strings):
