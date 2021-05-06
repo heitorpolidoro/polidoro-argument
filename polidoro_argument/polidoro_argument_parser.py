@@ -139,7 +139,7 @@ class PolidoroArgumentParser(ArgumentParser):
                 raise ArgumentError(action, 'expected at least %s arguments' % action.nargs[:-1])
             raise
 
-    def _parse_known_args(self, arg_strings, namespace):
+    def _parse_known_args(self, arg_strings, namespace):  # noqa: C901
         # Override to parse the K pattern
         # replace arg strings that are file references
         if self.fromfile_prefix_chars is not None:
