@@ -55,31 +55,33 @@ class PolidoroArgumentParser(ArgumentParser):
         self._add_commands()
         namespace, argv = self.parse_known_args(args, namespace)
         method_info = getattr(namespace, METHOD_TO_RUN, {})
-        if argv:
+        if method_info:
             from polidoro_argument import Command
-            command = Command.get_command(method_info.get('method', None))
-            if command and command.var_keyword:
+            command = Command.get_command(method_info['method'])
+            for arg in argv[:]:
                 # If there is args left but the method has a var_keyword,
                 # parse the keyword args left and set in namespace
-                for keyword_values in argv[:]:
-                    if keyword_values.startswith('--') and '=' in keyword_values:
-                        key, _, value = keyword_values.partition('=')
-                        setattr(namespace, key[2:], value)
-                        argv.remove(keyword_values)
-            if argv:
-                if command and command.remainder:
-                    for arg in argv:
-                        method_info['args'].append(arg)
-                else:
-                    msg = gettext('unrecognized arguments: %s')
-                    self.error(msg % ' '.join(argv))
+                if command.var_keyword and arg.startswith('--') and '=' in arg:
+                    key, _, value = arg.partition('=')
+                    setattr(namespace, key[2:], value)
+                    argv.remove(arg)
 
-        if method_info:
+                # If there is args left but the method has a remainder,
+                # add the remainders args in method args
+                elif command.remainder:
+                    method_info['args'].append(arg)
+                    argv.remove(arg)
+
             # Run Command method
             kwargs = {k: v for k, v in vars(namespace).items() if k not in ['positional', METHOD_TO_RUN]}
             resp = method_info['method'](*method_info['args'], **kwargs)
             if resp is not None:
                 print(resp)
+
+        if argv:
+            msg = gettext('unrecognized arguments: %s')
+            self.error(msg % ' '.join(argv))
+
         return namespace
 
     def add_subparsers(self, **kwargs):
