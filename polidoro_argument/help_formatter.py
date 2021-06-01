@@ -42,3 +42,19 @@ class ArgumentHelpFormatter(HelpFormatter):
                         for part in part_strings
                         if part and SUPPRESS not in part])
 
+    def _metavar_formatter(self, action, default_metavar):
+        if action.metavar is not None:
+            result = action.metavar
+        elif action.choices is not None:
+            from polidoro_argument.polidoro_argument_parser import DEFAULT_COMMAND
+            choice_strs = [str(choice) for choice in action.choices if str(choice) != DEFAULT_COMMAND]
+            result = '{%s}' % ','.join(choice_strs)
+        else:
+            result = default_metavar
+
+        def format(tuple_size):
+            if isinstance(result, tuple):
+                return result
+            else:
+                return (result, ) * tuple_size
+        return format
