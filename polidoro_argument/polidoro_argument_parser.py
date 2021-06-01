@@ -1,12 +1,17 @@
 """
 A wrapper over argparse.ArgumentParser
 """
-from argparse import SUPPRESS, ArgumentParser, ArgumentError
+import sys as _sys
+# noinspection PyProtectedMember
+from argparse import SUPPRESS, ArgumentParser, ArgumentError, Namespace, _SubParsersAction
 from string import Template
 
 from polidoro_argument.action import _Action
-from polidoro_argument.argument_help_formatter import ArgumentHelpFormatter
+from polidoro_argument.help_formatter import ArgumentHelpFormatter
 
+DEFAULT_COMMAND = 'default_command'
+
+_UNRECOGNIZED_ARGS_ATTR = '_unrecognized_args'
 METHOD_TO_RUN = '==METHODS_TO_RUN=='
 
 try:
@@ -37,9 +42,19 @@ def _get_action_name(argument):
 
 # noinspection PyProtectedMember
 class PolidoroArgumentParser(ArgumentParser):
-    def __init__(self, *args, version=None, **kwargs):
-        super(PolidoroArgumentParser, self).__init__(*args, formatter_class=ArgumentHelpFormatter, **kwargs)
+    def __init__(self, *args, version=None, default_command=None, prefix_chars='-', add_help=True, **kwargs):
+        super(PolidoroArgumentParser, self).__init__(*args, formatter_class=ArgumentHelpFormatter, add_help=False,
+                                                     prefix_chars=prefix_chars, **kwargs)
+        self.add_help = add_help
+        default_prefix = '-' if '-' in prefix_chars else prefix_chars[0]
+        if self.add_help:
+            from polidoro_argument.help_action import HelpAction
+            self.add_argument(
+                default_prefix+'h', default_prefix*2+'help',
+                action=HelpAction, default=SUPPRESS,
+                help=gettext('show this help message and exit'))
         self.subparsers = None
+        self.default_command = default_command
 
         if version:
             self.add_argument(
@@ -69,7 +84,10 @@ class PolidoroArgumentParser(ArgumentParser):
                 # If there is args left but the method has a remainder,
                 # add the remainders args in method args
                 elif command.remainder:
-                    method_info['args'].append(arg)
+                    if arg == '':
+                        method_info['args'].append('\'\'')
+                    else:
+                        method_info['args'].append(arg)
                     argv.remove(arg)
 
             # Run Command method
@@ -140,6 +158,52 @@ class PolidoroArgumentParser(ArgumentParser):
             if isinstance(action, _Action) and isinstance(action.nargs, str) and '+' in action.nargs:
                 raise ArgumentError(action, 'expected at least %s arguments' % action.nargs[:-1])
             raise
+
+    def _check_value(self, action, value):
+        # converted value must be one of the choices (if specified)
+        if action.choices is not None and value not in action.choices:
+            args = {'value': value,
+                    'choices': ', '.join(map(repr, filter(lambda act: act != DEFAULT_COMMAND, action.choices)))}
+            msg = gettext('invalid choice: %(value)r (choose from %(choices)s)')
+            raise ArgumentError(action, msg % args)
+
+    def parse_known_args(self, args=None, namespace=None):
+        if args is None:
+            # args default to the system args
+            args = _sys.argv[1:]
+        else:
+            # make sure that args are mutable
+            args = list(args)
+
+        # default Namespace built from parser defaults
+        if namespace is None:
+            namespace = Namespace()
+
+        # add any action defaults that aren't present
+        for action in self._actions:
+            if action.dest is not SUPPRESS:
+                if not hasattr(namespace, action.dest):
+                    if action.default is not SUPPRESS:
+                        setattr(namespace, action.dest, action.default)
+
+        # add any parser defaults that aren't present
+        for dest in self._defaults:
+            if not hasattr(namespace, dest):
+                setattr(namespace, dest, self._defaults[dest])
+
+        # parse the arguments and exit if there are any errors
+        try:
+            namespace, args = self._parse_known_args(args, namespace)
+            if hasattr(namespace, _UNRECOGNIZED_ARGS_ATTR):
+                args.extend(getattr(namespace, _UNRECOGNIZED_ARGS_ATTR))
+                delattr(namespace, _UNRECOGNIZED_ARGS_ATTR)
+            return namespace, args
+        except ArgumentError as err:
+            if isinstance(err.args[0], _SubParsersAction) and self.default_command is not None and args[0] != self.default_command:
+                return self.parse_known_args(['default_command'] + args)
+            else:
+                err = _sys.exc_info()[1]
+                self.error(str(err))
 
     def _parse_known_args(self, arg_strings, namespace):  # noqa: C901
         # Override to parse the K pattern

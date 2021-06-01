@@ -41,3 +41,4 @@ class ArgumentHelpFormatter(HelpFormatter):
         return ''.join([part
                         for part in part_strings
                         if part and SUPPRESS not in part])
+
