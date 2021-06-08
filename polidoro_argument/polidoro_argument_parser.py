@@ -87,7 +87,7 @@ class PolidoroArgumentParser(ArgumentParser):
                     if arg == '':
                         method_info['args'].append('\'\'')
                     else:
-                        method_info['args'].append(arg)
+                        method_info['args'].append('\'%s\'' % arg)
                     argv.remove(arg)
 
             # Run Command method
@@ -195,7 +195,7 @@ class PolidoroArgumentParser(ArgumentParser):
         try:
             namespace, args = self._parse_known_args(args, namespace)
             if hasattr(namespace, _UNRECOGNIZED_ARGS_ATTR):
-                args.extend(getattr(namespace, _UNRECOGNIZED_ARGS_ATTR))
+                args = getattr(namespace, _UNRECOGNIZED_ARGS_ATTR) + args
                 delattr(namespace, _UNRECOGNIZED_ARGS_ATTR)
             return namespace, args
         except ArgumentError as err:
