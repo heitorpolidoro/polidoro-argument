@@ -60,6 +60,7 @@ class _Params(object):
                                not k.startswith('__') and not isinstance(v, staticmethod) and not inspect.isfunction(v)}
                 clazz_attrs.setdefault('help', '')
                 clazz_attrs.setdefault('description', clazz_attrs['help'])
+                clazz_attrs.setdefault('default_command', getattr(clazz, 'default_command', None))
                 sub_parser = subparsers.add_parser(
                     name,
                     prog='%s %s' % (parser.prog, name),
@@ -142,9 +143,10 @@ class _CommandParams(_Params):
         for kw in self.keyword:
             argument_kwargs = {}
             default = inspect.signature(self.method).parameters[kw].default
-            if isinstance(default, bool):
+
+            if default is not None:
                 argument_kwargs = {
-                    'action': ('store_%s' % (not default)).lower(),
+                    'nargs': '?',
                     'default': default
                 }
             name = ('--' + kw, )

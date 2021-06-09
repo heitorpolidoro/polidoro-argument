@@ -22,7 +22,6 @@ parser = None
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    print("----------------------------------")
     global parser
     parser = PolidoroArgumentParser(prog='test$decorator')
     Argument._arguments = []
@@ -67,11 +66,13 @@ def generate_test_files():
             for test_case in generate_test_cases(decorator):
                 print("Generating test for: %s..." % test_case.method_name)
                 methods.append(test_case.method_template)
+                tests.append(test_case.usage_test)
                 tests.append(test_case.help_test)
                 tests.append(test_case.call_test)
                 tests.append(test_case.one_less_arg_test)
                 tests.append(test_case.one_more_arg_test)
                 tests.append(test_case.one_more_kwarg_test)
+                tests.append(test_case.one_less_kwarg_test)
 
             tests = [t for t in tests if t]
 

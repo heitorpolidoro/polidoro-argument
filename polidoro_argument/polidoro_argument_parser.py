@@ -69,38 +69,41 @@ class PolidoroArgumentParser(ArgumentParser):
         self._add_arguments()
         self._add_commands()
         namespace, argv = self.parse_known_args(args, namespace)
-        method_info = getattr(namespace, METHOD_TO_RUN, {})
-        if method_info:
-            from polidoro_argument import Command
-            command = Command.get_command(method_info['method'])
-            for arg in argv[:]:
-                # If there is args left but the method has a var_keyword,
-                # parse the keyword args left and set in namespace
-                if command.var_keyword and arg.startswith('--') and '=' in arg:
-                    key, _, value = arg.partition('=')
-                    setattr(namespace, key[2:], value)
-                    argv.remove(arg)
-
-                # If there is args left but the method has a remainder,
-                # add the remainders args in method args
-                elif command.remainder:
-                    if arg == '':
-                        method_info['args'].append('\'\'')
-                    else:
-                        method_info['args'].append('\'%s\'' % arg)
-                    argv.remove(arg)
-
-            # Run Command method
-            kwargs = {k: v for k, v in vars(namespace).items() if k not in ['positional', METHOD_TO_RUN]}
-            resp = method_info['method'](*method_info['args'], **kwargs)
-            if resp is not None:
-                print(resp)
 
         if argv:
             msg = gettext('unrecognized arguments: %s')
             self.error(msg % ' '.join(argv))
 
         return namespace
+
+    @staticmethod
+    def run_method(argv, **kwargs):
+        from polidoro_argument import Command
+
+        # Ignore 'positional' values
+        kwargs.pop('positional')
+        method_info = kwargs.pop(METHOD_TO_RUN)
+        command = Command.get_command(method_info['method'])
+        for arg in argv[:]:
+            # If there is args left but the method has a var_keyword,
+            # parse the keyword args left and set in namespace
+            if command.var_keyword and arg.startswith('--') and '=' in arg:
+                key, _, value = arg.partition('=')
+                kwargs[key[2:]] = value
+                argv.remove(arg)
+
+            # If there is args left but the method has a remainder,
+            # add the remainders args in method args
+            elif command.remainder:
+                if arg == '':
+                    method_info['args'].append('\'\'')
+                else:
+                    method_info['args'].append('\'%s\'' % arg)
+                argv.remove(arg)
+        # Run Command method
+        resp = method_info['method'](*method_info['args'], **kwargs)
+        if resp is not None:
+            print(resp)
 
     def add_subparsers(self, **kwargs):
         self.subparsers = super(PolidoroArgumentParser, self).add_subparsers(**kwargs)
@@ -193,13 +196,22 @@ class PolidoroArgumentParser(ArgumentParser):
 
         # parse the arguments and exit if there are any errors
         try:
-            namespace, args = self._parse_known_args(args, namespace)
+            namespace, new_args = self._parse_known_args(args, namespace)
+            if hasattr(namespace, METHOD_TO_RUN):
+                self.run_method(new_args, **vars(namespace))
+                delattr(namespace, METHOD_TO_RUN)
+
             if hasattr(namespace, _UNRECOGNIZED_ARGS_ATTR):
-                args = getattr(namespace, _UNRECOGNIZED_ARGS_ATTR) + args
+                new_args = getattr(namespace, _UNRECOGNIZED_ARGS_ATTR) + new_args
                 delattr(namespace, _UNRECOGNIZED_ARGS_ATTR)
-            return namespace, args
+
+            # If there is no args and the parser has default_command, run it
+            if not args and self.default_command:
+                return self.parse_known_args(['default_command'])
+            return namespace, new_args
         except ArgumentError as err:
-            if isinstance(err.args[0], _SubParsersAction) and self.default_command is not None and args[0] != self.default_command:
+            # If there is some unrecognized arguments and the parser has default_command, run it with those arguments
+            if isinstance(err.args[0], _SubParsersAction) and self.default_command is not None:
                 return self.parse_known_args(['default_command'] + args)
             else:
                 err = _sys.exc_info()[1]

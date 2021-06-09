@@ -1,3 +1,4 @@
+import inspect
 from argparse import SUPPRESS, Action
 from subprocess import run
 
@@ -24,6 +25,9 @@ class HelpAction(Action):
         else:
             parser.print_help()
 
-        if parser.default_command is not None:
+        # Also print default_command help
+        if isinstance(parser.default_command, str):
             run(' '.join([parser.default_command, option_string]), shell=True, text=True)
+        elif inspect.isfunction(parser.default_command):
+            parser.parse_args([parser.default_command.__name__, option_string])
         parser.exit()

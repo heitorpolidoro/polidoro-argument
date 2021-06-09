@@ -75,7 +75,7 @@ class _TestCase(object):
 
         return args
 
-    def keyword_args(self, n_keyword=None, var_keyword=None):
+    def keyword_args(self, n_keyword=None, var_keyword=None, return_default_values=False):
         raise NotImplementedError
 
     @property
@@ -88,12 +88,13 @@ class _TestCase(object):
     def method_return(self):
         return re.sub(r'=.*?\d', '', self.signature.replace('*', '').replace('\'', ''))
 
-    @property
-    def method_return_assert(self):
+    def method_return_assert(self, n_positional=None, var_positional=None,
+                             n_keyword=None, var_keyword=None,
+                             return_default_values=False):
         if self.method_return:
             args = []
             var_positionals = tuple()
-            for a in self.positional_args():
+            for a in self.positional_args(n_positional, var_positional):
                 if a.startswith('var'):
                     var_positionals += (a, )
                 else:
@@ -103,7 +104,7 @@ class _TestCase(object):
                 args.append(var_positionals)
 
             var_keywords = {}
-            for a in self.keyword_args():
+            for a in self.keyword_args(n_keyword, var_keyword, return_default_values):
                 if a.startswith('--'):
                     a = a[2:]
                 if a.startswith('var'):
@@ -170,15 +171,32 @@ class _TestCase(object):
         )
 
     @property
-    def help_test(self):
+    def usage_test(self):
         template = """
-def test_help_${method_name}(capsys):
+def test_usage_${method_name}(capsys):
     with pytest.raises(SystemExit) as exit_info:
         parser.parse_args(['-h'])
     assert exit_info.value.code == 0
     
     output = capsys.readouterr().out
     assert re.search(r'usage:.*${method_usage}', output, flags=re.DOTALL), output
+"""
+        return Template(template).substitute(
+            method_call=self.method_call().strip(),
+            method_name=self.method_name,
+            method_help=self.method_help,
+            method_usage=self.method_usage
+        )
+
+    @property
+    def help_test(self):
+        template = """
+def test_help_${method_name}(capsys):
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args(['--help'])
+    assert exit_info.value.code == 0
+    
+    output = capsys.readouterr().out
     assert re.search(r' *${method_help}.*\\n', output, flags=re.DOTALL), output
 """
         return Template(template).substitute(
@@ -200,8 +218,7 @@ def test_call_${method_name}(capsys):
         return Template(template).substitute(
             method_call=self.method_call(),
             method_name=self.method_name,
-            method_return=self.method_return,
-            method_return_assert=self.method_return_assert
+            method_return_assert=self.method_return_assert()
         )
 
     @property
@@ -232,6 +249,26 @@ def test_call_${method_name}_with_one_more_arg_test(capsys):
     def one_more_kwarg_test(self):
         raise NotImplementedError
 
+    @property
+    def one_less_kwarg_test(self):
+        if self.var_keyword:
+            return ''
+
+        template = """
+def test_call_${method_name}_with_one_less_kwarg_test(capsys):
+    parser.parse_args('${method_call}'.split())
+    
+    output = capsys.readouterr().out
+    assert re.search(r'${method_name} called\\n${method_return_assert}', output), output
+"""
+        return Template(template).substitute(
+            method_call=self.method_call(n_keyword=self.n_keyword - 1, var_keyword=False),
+            method_name=self.method_name,
+            method_return_assert=self.method_return_assert(
+                n_keyword=self.n_keyword - 1, var_keyword=False, return_default_values=True
+            )
+        )
+
 
 class ArgumentTestCase(_TestCase):
     def __init__(self, *args, **kwargs):
@@ -248,7 +285,7 @@ class ArgumentTestCase(_TestCase):
 
         return '--%s %s' % (self.method_name, ' '.join(args))
 
-    def keyword_args(self, n_keyword=None, var_keyword=None):
+    def keyword_args(self, n_keyword=None, var_keyword=None, return_default_values=False):
         if n_keyword is None:
             n_keyword = self.n_keyword
         if var_keyword is None:
@@ -257,6 +294,10 @@ class ArgumentTestCase(_TestCase):
         args = []
         for k in range(n_keyword):
             args.append('keyword_%d=value_%d' % ((k + 1,) * 2))
+
+        if return_default_values and self.n_keyword > 0:
+            for k in range(n_keyword, self.n_keyword):
+                args.append('keyword_%d=default_%d' % ((k + 1,) * 2))
 
         if var_keyword:
             args.append('var_keyword_1=value_1')
@@ -323,7 +364,7 @@ class CommandTestCase(_TestCase):
 
         return '%s %s' % (self.method_name, ' '.join(args))
 
-    def keyword_args(self, n_keyword=None, var_keyword=None):
+    def keyword_args(self, n_keyword=None, var_keyword=None, return_default_values=False):
         if n_keyword is None:
             n_keyword = self.n_keyword
         if var_keyword is None:
@@ -333,6 +374,10 @@ class CommandTestCase(_TestCase):
         for k in range(n_keyword):
             args.append('--keyword_%d=value_%d' % ((k + 1,) * 2))
 
+        if return_default_values and self.n_keyword > 0:
+            for k in range(n_keyword, self.n_keyword):
+                args.append('--keyword_%d=default_%d' % ((k + 1,) * 2))
+
         if var_keyword:
             args.append('--var_keyword_1=value_1')
             args.append('--var_keyword_2=value_2')
@@ -340,16 +385,35 @@ class CommandTestCase(_TestCase):
         return args
 
     @property
-    def help_test(self):
-        default = super(CommandTestCase, self).help_test
+    def usage_test(self):
+        default = super(CommandTestCase, self).usage_test
         template = """
-def test_internal_help_${method_name}(capsys):
+def test_internal_usage_${method_name}(capsys):
     with pytest.raises(SystemExit) as exit_info:
         parser.parse_args(['${method_name}', '-h'])
     assert exit_info.value.code == 0
     
     output = capsys.readouterr().out
     assert re.search(r'usage: testCommand ${method_name}.*${internal_method_usage}', output, flags=re.DOTALL), output
+"""
+        return default + '\n' + Template(template).substitute(
+            method_call=self.method_call().strip(),
+            method_name=self.method_name,
+            method_help=self.method_help,
+            method_usage=self.method_usage,
+            internal_method_usage=self.internal_method_usage
+        )
+
+    @property
+    def help_test(self):
+        default = super(CommandTestCase, self).help_test
+        template = """
+def test_internal_help_${method_name}(capsys):
+    with pytest.raises(SystemExit) as exit_info:
+        parser.parse_args(['${method_name}', '--help'])
+    assert exit_info.value.code == 0
+    
+    output = capsys.readouterr().out
     assert re.search(r' *${method_help}.*\\n', output, flags=re.DOTALL), output
 """
         return default + '\n' + Template(template).substitute(
