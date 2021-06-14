@@ -2,13 +2,18 @@
 HelpFormatter to adapt to arguments
 """
 # noinspection PyUnresolvedReferences,PyProtectedMember
-from argparse import HelpFormatter, SUPPRESS, _SubParsersAction
+from argparse import HelpFormatter, SUPPRESS, _SubParsersAction, Action
+from operator import attrgetter
 
 from polidoro_argument.action import _Action
 
 
 # noinspection PyProtectedMember
 class ArgumentHelpFormatter(HelpFormatter):
+    # def add_arguments(self, actions: Iterable[Action]) -> None:
+    #     actions = sorted(actions)
+    #     super(ArgumentHelpFormatter, self).add_arguments(actions)
+
     def _format_args(self, action, default_metavar):
         if isinstance(action, _Action):
             args = action.positional[:]
@@ -30,9 +35,7 @@ class ArgumentHelpFormatter(HelpFormatter):
 
     def _format_action_invocation(self, action):
         # To hide subparsers group help
-        if isinstance(action, _SubParsersAction):
-            return SUPPRESS
-        if action.help == SUPPRESS:
+        if isinstance(action, _SubParsersAction) or action.help == SUPPRESS:
             return SUPPRESS
         return super(ArgumentHelpFormatter, self)._format_action_invocation(action)
 
@@ -58,3 +61,13 @@ class ArgumentHelpFormatter(HelpFormatter):
             else:
                 return (result, ) * tuple_size
         return format
+
+    def _iter_indented_subactions(self, action):
+        try:
+            get_subactions = getattr(action, '_get_subactions')
+        except AttributeError:
+            pass
+        else:
+            self._indent()
+            yield from sorted(get_subactions(), key=attrgetter('metavar'))
+            self._dedent()
