@@ -1,4 +1,5 @@
-# Polidoro Argument [![Latest](https://img.shields.io/github/release/heitorpolidoro/argument.svg?label=latest)](https://github.com/heitorpolidoro/argument/releases/latest)
+class Argument:
+pass# Polidoro Argument [![Latest](https://img.shields.io/github/release/heitorpolidoro/argument.svg?label=latest)](https://github.com/heitorpolidoro/argument/releases/latest)
 Package to simplify creating command line arguments for scripts in Python.
 
 #### How to use:
@@ -13,57 +14,72 @@ All keywords arguments to `@Argument` and `@Command` are the same as in [argpars
 
 ###### Examples:
 foo.py
-```
+```python
 
 from polidoro_argument import Argument, PolidoroArgumentParser
 
 @Argument
 def bar():
     print('hi')
-    
-parser = ArgumentParser()
+
+PolidoroArgumentParser().parse_args()
+# OR
+parser = PolidoroArgumentParser()
 parser.parse_args()
 ```
 Result:
-```
+```bash
 $ python foo.py --bar
 hi 
 ```
 
 You can pass argument to the method
-```
+
+```python
+from polidoro_argument import Argument
+
 @Argument
 def bar(baz=None):
     print(baz)
 ```
-```
+```bash
 $ python foo.py --bar Hello
 Hello
 ```
 To create commands
-```
+
+```python
+from polidoro_argument import Command
+
+
 @Command
 def command():
     print('this is a command')
 ```
-```
+```bash
 $ python foo.py command
 this is a command
 ```
 With arguments
-```
+
+```python
+from polidoro_argument import Command
+
+
 @Command
 def command_with_arg(arg, arg1=None):
     print('this the command arg: %s, arg1: %s' % (arg, arg1))
 ```
-```
+```bash
 $ python foo.py command_with_arg Hello
 this the command arg: Hello, arg1: None
 $ python foo.py command_with_arg Hello --arg1 World
 this the command arg: Hello, arg1: World
 ```
 Using a Class
-```
+```python
+from polidoro_argument import Argument, Command
+
 class ClassCommand:
     @staticmethod
     @Argument
@@ -75,7 +91,7 @@ class ClassCommand:
     def command_in_class(arg='Oi'):
         print('command_in_class called. arg=%s' % arg)
 ```
-```
+```bash
 $ python foo.py classcommand --argument_in_class
 argument_in_class called
 $ python foo.py classcommand command_in_class
@@ -83,6 +99,51 @@ command_in_class called. arg=Oi
 $ python foo.py classcommand command_in_class --arg=Ola
 command_in_class called. arg=Ola
 ```
+Undefined number of arguments
+
+```python
+from polidoro_argument import Argument
 
 
+@Argument
+def argument(*args, **kwargs):
+    print(args, kwargs)
 
+
+@Argument
+def command(*args, **kwargs):
+    print(args, kwargs)
+```
+```bash
+$ python foo.py --argument arg1 arg2 kwarg1=1 kwarg2 2 # without '--' in kwargs
+('arg1', 'arg2') {'kwarg1': 1, 'kwarg2: 2'}
+$ python foo.py command arg1 arg2 --kwarg1=1 --kwarg2 2 # with '--' in kwargs
+('arg1', 'arg2') {'kwarg1': 1, 'kwarg2: 2'} 
+ 
+```
+Default Command
+
+It's possible to define a _default command_ to be called when no argument is passed to a command or there is some unrecognized arguments
+
+```python
+from polidoro_argument import Command
+
+
+class Bar(object):
+    help = 'cli help'
+    description = 'description'
+
+    @staticmethod
+    @Command
+    def default_command(*remainder):
+        if remainder:
+            print('with remainders:', *remainder)
+        else:
+            print('without remainders')
+```
+```bash
+$ python foo.py bar
+without remainders
+$ python foo.py bar r1 r2 r3
+with remainders: r1 r2 r3
+```

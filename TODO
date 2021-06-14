@@ -1,2 +1,9 @@
 add alias to arguments and commands
 add help to command arguments
+
+positional arguments:
+  arg1 arg2
+
+positional arguments:
+    arg1 -> help arg1
+    arg2 -> help arg2

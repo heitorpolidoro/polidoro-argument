@@ -3,12 +3,14 @@ Classes to inspect the methods signature and configure the Argument or Command
 """
 
 import inspect
+from argparse import SUPPRESS
 
 from polidoro_argument.action import ArgumentAction, CommandAction
+from polidoro_argument.polidoro_argument_parser import DEFAULT_COMMAND
 
 
 class _Params(object):
-    def __init__(self, method, aliases=None, command_alias=None, **kwargs):
+    def __init__(self, method, arguments_help=None, arguments_aliases=None, **kwargs):
         self.method = method
         self.method_name = method.__name__
         self.kwargs = kwargs
@@ -19,8 +21,11 @@ class _Params(object):
         self.nargs = None
         self.added = False
         self.remainder = False
-        self.command_alias = [] if command_alias is None else command_alias
-        self.aliases = getattr(method, 'aliases', {}) if aliases is None else aliases
+        self.arguments_help = {} if arguments_help is None else arguments_help
+        self.arguments_aliases = {} if arguments_aliases is None else arguments_aliases
+        for arg, alias in self.arguments_aliases.items():
+            if not isinstance(alias, list):
+                self.arguments_aliases[arg] = [alias]
 
         self.inspect_signature()
         self.kwargs.setdefault('help', '')
@@ -116,16 +121,18 @@ class _CommandParams(_Params):
     def add_command(self, parser):
         parser = self.get_final_parser(parser, self.method)
         subparsers = self.get_subparsers(parser)
+        if self.method_name == DEFAULT_COMMAND and not self.kwargs.get('help', ''):
+            self.kwargs['help'] = SUPPRESS
         sub_parser = subparsers.add_parser(
             self.method_name,
-            aliases=self.command_alias,
             prog='%s %s' % (parser.prog, self.method_name),
             add_help=not self.remainder,
             **self.kwargs
         )
 
+        metavar = None
         if self.positional:
-            self.kwargs.setdefault('metavar', ' '.join(self.positional))
+            metavar = ' '.join(self.positional)
 
         sub_parser.add_argument(
             'positional',
@@ -137,19 +144,25 @@ class _CommandParams(_Params):
             keyword=self.keyword,
             var_keyword=self.var_keyword,
             remainder=self.remainder,
-            **self.kwargs
+            metavar=metavar
         )
 
         for kw in self.keyword:
-            argument_kwargs = {}
+            argument_kwargs = {
+                'help': self.arguments_help.get(kw, None)
+            }
             default = inspect.signature(self.method).parameters[kw].default
 
             if default is not None:
-                argument_kwargs = {
+                argument_kwargs.update({
                     'nargs': '?',
-                    'default': default
-                }
+                    'default': default,
+                })
             name = ('--' + kw, )
-            if kw in self.aliases:
-                name += ('-' + self.aliases[kw], )
+            if kw in self.arguments_aliases:
+                for alias in self.arguments_aliases[kw]:
+                    if len(alias) == 1:
+                        name += ('-' + alias, )
+                    else:
+                        name += ('--' + alias, )
             sub_parser.add_argument(*name, **argument_kwargs)

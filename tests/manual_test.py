@@ -1,5 +1,4 @@
 import re
-from argparse import SUPPRESS
 
 import pytest
 
@@ -19,8 +18,13 @@ class TestCLI(object):
     description = 'description'
 
     @staticmethod
-    @Command(help='inner help')
-    def inner_command():
+    @Command(
+        help='inner help',
+        aliases=['ic'],
+        arguments_help={'arg1': 'Arg1 help', 'kwarg1': 'Kwarg1 Help'},
+        arguments_aliases={'kwarg1': 'kw', 'arg1': ['a', 'r']}
+    )
+    def inner_command(arg1, arg2, kwarg1=None):
         print('command!')
 
     @staticmethod
@@ -29,7 +33,7 @@ class TestCLI(object):
         print('argument!')
 
     @staticmethod
-    @Command(help=SUPPRESS)
+    @Command
     def default_command(*remainder):
         if remainder:
             print('with remainders:', *remainder)
@@ -45,6 +49,36 @@ def test_description(capsys):
 
     output = capsys.readouterr().out
     assert re.search(r'usage: testManual testcli.*\n\ndescription\n\n', output, flags=re.DOTALL), output
+
+
+def test_help_command_alias(capsys):
+    with pytest.raises(SystemExit) as exit_info:
+        # noinspection PyUnresolvedReferences
+        parser.parse_args('testcli --help'.split())
+    assert exit_info.value.code == 0
+
+    output = capsys.readouterr().out
+    assert 'inner_command (ic)' in output
+
+
+def test_default_command_help(capsys):
+    with pytest.raises(SystemExit) as exit_info:
+        # noinspection PyUnresolvedReferences
+        parser.parse_args('testcli --help'.split())
+    assert exit_info.value.code == 0
+
+    output = capsys.readouterr().out
+    assert 'default_command' not in output
+
+
+def test_help_command_help_alias(capsys):
+    with pytest.raises(SystemExit) as exit_info:
+        # noinspection PyUnresolvedReferences
+        parser.parse_args('testcli ic --help'.split())
+    assert exit_info.value.code == 0
+
+    output = capsys.readouterr().out
+    assert re.search(r'--kwarg1.*--kw', output, flags=re.DOTALL), output
 
 
 def test_default_command_without_remainders(capsys):

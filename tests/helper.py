@@ -410,7 +410,7 @@ def test_internal_usage_${method_name}(capsys):
         template = """
 def test_internal_help_${method_name}(capsys):
     with pytest.raises(SystemExit) as exit_info:
-        parser.parse_args(['${method_name}', '--help'])
+        parser.parse_args(['--help'])
     assert exit_info.value.code == 0
     
     output = capsys.readouterr().out
