@@ -22,7 +22,8 @@ class _Params(object):
         self.added = False
         self.remainder = False
         self.arguments_help = {} if arguments_help is None else arguments_help
-        self.arguments_aliases = {} if arguments_aliases is None else arguments_aliases
+        self.arguments_aliases = getattr(method, 'arguments_aliases', {}) if arguments_aliases is None \
+            else arguments_aliases
         for arg, alias in self.arguments_aliases.items():
             if not isinstance(alias, list):
                 self.arguments_aliases[arg] = [alias]

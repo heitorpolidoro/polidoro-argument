@@ -7,4 +7,4 @@ from polidoro_argument.command import Command
 from polidoro_argument.polidoro_argument_parser import PolidoroArgumentParser
 
 NAME = 'polidoro_argument'
-VERSION = '3.3.2'
+VERSION = '3.3.4'
